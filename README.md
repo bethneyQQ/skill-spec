@@ -1,6 +1,6 @@
 ## 📋 Skill-Spec
 
-**Turn Vague "Vibes" into Industrial-Grade Agent Skills.**
+**Turn Vague "Vibes" into Industrial-Grade Agent Skills. The Factory for Claude Skills**
 
 ---
 
