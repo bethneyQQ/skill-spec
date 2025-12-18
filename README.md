@@ -61,7 +61,7 @@ git clone https://github.com/bethneyQQ/skill-spec/skill-spec.git
 cd skill-spec
 
 # Install from source
-pip install -e
+pip install -e .
 ```
 
 ### Setup in Your Project
