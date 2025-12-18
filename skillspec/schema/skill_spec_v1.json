@@ -161,7 +161,7 @@
         "purpose": {
           "type": "string",
           "minLength": 10,
-          "maxLength": 200,
+          "maxLength": 500,
           "description": "Single sentence purpose statement"
         },
         "owner": {
@@ -484,14 +484,14 @@
     },
     "DecisionRule": {
       "type": "object",
-      "description": "Individual decision rule",
-      "required": ["id", "when", "then"],
+      "description": "Individual decision rule. When used as key-value pairs in decision_rules, the key serves as the id.",
+      "required": ["when", "then"],
       "additionalProperties": false,
       "properties": {
         "id": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$",
-          "description": "Unique rule identifier"
+          "description": "Unique rule identifier. Optional when rule is defined as key-value pair (key becomes id)"
         },
         "priority": {
           "type": "integer",

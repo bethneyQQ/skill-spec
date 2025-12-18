@@ -199,14 +199,30 @@ def wrap_generated_block(content: str, section_name: Optional[str] = None) -> st
     """
     Wrap content in generated block markers.
 
+    Frontmatter (--- ... ---) is kept outside the markers because:
+    1. It must be at the very start of the file for proper parsing
+    2. It contains skill metadata that should be visible to parsers
+
     Args:
         content: Content to wrap
         section_name: Optional section name for context
 
     Returns:
-        Content wrapped in markers
+        Content wrapped in markers, with frontmatter outside if present
     """
-    return f"{GENERATED_START}\n{content}\n{GENERATED_END}"
+    # Check for YAML frontmatter at the start (--- ... ---)
+    frontmatter_pattern = re.compile(r'^(---\s*\n.*?\n---\s*\n)', re.DOTALL)
+    frontmatter_match = frontmatter_pattern.match(content)
+
+    if frontmatter_match:
+        # Extract frontmatter and remaining content
+        frontmatter = frontmatter_match.group(1)
+        remaining_content = content[frontmatter_match.end():]
+        # Frontmatter goes outside, rest inside generated block
+        return f"{frontmatter}{GENERATED_START}\n{remaining_content}\n{GENERATED_END}"
+    else:
+        # No frontmatter, wrap everything
+        return f"{GENERATED_START}\n{content}\n{GENERATED_END}"
 
 
 def wrap_manual_block(content: str, section_name: Optional[str] = None) -> str:
@@ -266,10 +282,25 @@ def merge_with_preservation(
     # Build merged content
     merged_lines = []
 
-    # Add new generated content wrapped in markers
-    merged_lines.append(GENERATED_START)
-    merged_lines.append(new_generated_content.strip())
-    merged_lines.append(GENERATED_END)
+    # Check for frontmatter in new content - it should be outside markers
+    frontmatter_pattern = re.compile(r'^(---\s*\n.*?\n---\s*\n)', re.DOTALL)
+    frontmatter_match = frontmatter_pattern.match(new_generated_content)
+
+    if frontmatter_match:
+        # Add frontmatter outside markers
+        frontmatter = frontmatter_match.group(1).strip()
+        remaining_content = new_generated_content[frontmatter_match.end():]
+        merged_lines.append(frontmatter)
+        merged_lines.append("")
+        merged_lines.append(GENERATED_START)
+        merged_lines.append(remaining_content.strip())
+        merged_lines.append(GENERATED_END)
+    else:
+        # No frontmatter, wrap everything
+        merged_lines.append(GENERATED_START)
+        merged_lines.append(new_generated_content.strip())
+        merged_lines.append(GENERATED_END)
+
     result.generated_blocks_updated = 1
 
     # Append preserved manual blocks

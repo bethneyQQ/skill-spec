@@ -49,6 +49,7 @@ class QualityValidationResult:
     category_counts: Dict[str, int] = field(default_factory=dict)
     total_errors: int = 0
     total_warnings: int = 0
+    total_info: int = 0
 
     def add_violation(self, violation: PatternViolation) -> None:
         """Add a violation and update counts."""
@@ -65,6 +66,8 @@ class QualityValidationResult:
             self.valid = False
         elif violation.severity == "warning":
             self.total_warnings += 1
+        elif violation.severity == "info":
+            self.total_info += 1
 
 
 @dataclass

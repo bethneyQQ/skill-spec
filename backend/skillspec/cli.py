@@ -648,10 +648,18 @@ def validate(ctx: click.Context, name: str, strict: bool, policy_paths: tuple,
             format_validator = AnthropicFormatValidator()
             format_result = format_validator.validate_file(skill_md_path)
 
+    # Determine overall result (in strict mode, format check is also required)
+    overall_valid = result.valid
+    format_failed_in_strict = False
+    if strict and format_result and not format_result.valid:
+        overall_valid = False
+        format_failed_in_strict = True
+
     if output_format == "json":
         output_data = result.to_dict()
         if format_result:
             output_data["anthropic_format"] = format_result.to_dict()
+        output_data["overall_valid"] = overall_valid
         click.echo(json.dumps(output_data, indent=2))
     else:
         _print_validation_result(result, name)
@@ -659,11 +667,20 @@ def validate(ctx: click.Context, name: str, strict: bool, policy_paths: tuple,
             click.echo()
             _print_format_result(format_result)
 
-    # Fail if format check failed in strict mode
-    if strict and format_result and not format_result.valid:
-        sys.exit(1)
+        # Show clear overall status in strict mode
+        if strict:
+            click.echo()
+            click.echo("-" * 40)
+            if overall_valid:
+                click.secho("Overall (--strict): PASSED", fg="green", bold=True)
+            else:
+                click.secho("Overall (--strict): FAILED", fg="red", bold=True)
+                if format_failed_in_strict:
+                    click.echo("  Reason: Anthropic format check failed")
+                if not result.valid:
+                    click.echo("  Reason: Spec validation failed")
 
-    sys.exit(0 if result.valid else 1)
+    sys.exit(0 if overall_valid else 1)
 
 
 def _print_validation_result(result: ValidationResult, name: str) -> None:

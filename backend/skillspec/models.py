@@ -136,7 +136,7 @@ class SkillMetadata(BaseModel):
     purpose: str = Field(
         ...,
         min_length=10,
-        max_length=200,
+        max_length=500,
         description="Single sentence purpose statement"
     )
     owner: str = Field(
@@ -294,11 +294,12 @@ class DecisionRule(BaseModel):
     Individual decision rule.
 
     Defines a condition-action pair with priority support.
+    When used as key-value pairs in decision_rules, the key serves as the id.
     """
 
-    id: str = Field(
-        ...,
-        description="Unique rule identifier"
+    id: Optional[str] = Field(
+        default=None,
+        description="Unique rule identifier. Auto-generated if not provided."
     )
     priority: int = Field(
         default=0,
@@ -320,8 +321,10 @@ class DecisionRule(BaseModel):
 
     @field_validator("id")
     @classmethod
-    def validate_id(cls, v: str) -> str:
-        """Validate rule ID follows snake_case pattern."""
+    def validate_id(cls, v: Optional[str]) -> Optional[str]:
+        """Validate rule ID follows snake_case pattern if provided."""
+        if v is None:
+            return v
         if not SNAKE_CASE_PATTERN.match(v):
             raise ValueError(
                 f"Rule ID must be snake_case (e.g., 'rule_validation'), got: {v}"
@@ -374,13 +377,27 @@ class DecisionRules(BaseModel):
         1. Canonical format: {"_config": {...}, "rules": [...]}
         2. Legacy key-value format: {"_config": {...}, "rule_id": {...}, ...}
         3. Legacy list format: [{...}, {...}]
+
+        Auto-generates rule IDs for rules that don't have explicit ids.
         """
+        def ensure_rule_ids(rules_list: list, start_index: int = 0) -> list:
+            """Ensure each rule has an id, auto-generating if needed."""
+            result = []
+            for i, rule in enumerate(rules_list):
+                if isinstance(rule, dict) and "id" not in rule:
+                    rule = {**rule, "id": f"rule_{start_index + i}"}
+                result.append(rule)
+            return result
+
         if isinstance(values, dict):
             config = values.get("_config", {})
 
             # Format 1: Canonical format with rules key
             if "rules" in values:
-                return {"_config": config, "rules": values["rules"]}
+                rules = values["rules"]
+                if isinstance(rules, list):
+                    rules = ensure_rule_ids(rules)
+                return {"_config": config, "rules": rules}
 
             # Format 2: Legacy key-value format (rules as direct properties)
             rules = []
@@ -395,7 +412,8 @@ class DecisionRules(BaseModel):
 
         elif isinstance(values, list):
             # Format 3: Legacy list format
-            return {"_config": {}, "rules": values}
+            rules = ensure_rule_ids(values)
+            return {"_config": {}, "rules": rules}
 
         return values
 
@@ -604,7 +622,7 @@ class SkillSpec(BaseModel):
     - Context Sections (1 optional): context
     """
 
-    spec_version: Literal["skill-spec/1.0"] = Field(
+    spec_version: Literal["skill-spec/1.0", "skill-spec/1.1"] = Field(
         default="skill-spec/1.0",
         description="Schema version identifier"
     )

@@ -71,10 +71,10 @@ patterns:
 
   - pattern: "\\bsupport\\b"
     category: VAGUE_ACTION
-    severity: warning
+    severity: info
     regex: true
     context: "action"
-    fix: "Replace with specific action or capability"
+    fix: "Consider replacing with specific action or capability"
 
   # VAGUE_DEGREE - Uncertainty qualifiers
   - pattern: "\\bgenerally\\b"

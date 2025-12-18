@@ -238,7 +238,10 @@ class TestBundleCreator:
             assert bundle.skill_name == "test-skill"
             assert bundle.version == "1.0.0"
             assert len(bundle.checksum) > 0
-            assert "spec.yaml" in bundle.files
+            # Note: spec.yaml is intentionally excluded from runtime bundles
+            # Only SKILL.md and resources are included
+            assert "SKILL.md" in bundle.files
+            assert "spec.yaml" not in bundle.files
 
     def test_create_bundle_with_optional_files(self):
         """Test creating bundle with optional files."""

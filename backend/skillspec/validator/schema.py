@@ -196,17 +196,18 @@ class SchemaValidator:
         result: SchemaValidationResult
     ) -> None:
         """Check spec_version field."""
+        valid_versions = {"skill-spec/1.0", "skill-spec/1.1"}
         if "spec_version" not in spec_data:
             result.add_error(
                 path="spec_version",
                 message="Missing required field: spec_version",
-                suggestion="Add 'spec_version: \"skill-spec/1.0\"'"
+                suggestion="Add 'spec_version: \"skill-spec/1.1\"'"
             )
-        elif spec_data["spec_version"] != "skill-spec/1.0":
+        elif spec_data["spec_version"] not in valid_versions:
             result.add_warning(
                 path="spec_version",
                 message=f"Unknown spec version: {spec_data['spec_version']}",
-                suggestion="Use 'skill-spec/1.0' for this version"
+                suggestion="Use 'skill-spec/1.0' or 'skill-spec/1.1'"
             )
 
     def _validate_with_pydantic(
