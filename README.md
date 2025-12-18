@@ -1,6 +1,6 @@
-## 📋 Skill-Spec —— The Factory for Claude Skills
+# 📋 Skill-Spec: The Industrial-Grade Claude Skill Factory
 
-**Turn Vague "Vibes" into Industrial-Grade Agent Skills.**
+**Turn Vague "Vibes" into Industrial-Grade, Interactive, Bulletproof Artifacts.**
 
 ---
 
@@ -21,31 +21,56 @@ Skill-Spec is the "Adult in the Room" for your AI workflow. It forces LLMs to ad
 
 This is a framework for **Defensive Agent Engineering**.
 
----
-
-## 🔥 Why Skill-Spec?
-
-### 🛡️ The "Skill Architect" Protocol
-
-Stop guessing. We transform natural language into rigorous specifications.
-
-**From:** "Check the weather."
-
-**To:** A 4-step execution plan with defined inputs, decision_rules, forbidden_patterns, and mandatory edge_case handling.
-
-**The Result:** Zero Hallucination, 100% Schema Compliance.
-
----
-
-## 🧠 The Core Philosophy
+### 🧠 The Core Philosophy
 
 We believe in the "Do vs. Don't" paradigm:
 
 | The Old Way (Vague Guidance) | The Skill-Spec Way (Specific Specs) |
 |------------------------------|-------------------------------------|
-| "Be helpful and concise." | Forbidden Pattern Scan: Reject "filler words". |
-| "Handle errors." | Mandatory Edge Cases: Define logic for timeouts & bad data. |
-| "Output the result." | Output Contract: Enforce strict JSON Schema. |
+| "Be helpful and concise." | **Forbidden Pattern Scan:** Reject "filler words". |
+| "Handle errors." | **Mandatory Edge Cases:** Define logic for timeouts & bad data. |
+| "Output the result." | **Output Contract:** Enforce strict JSON Schema. |
+
+---
+
+## ⚡ The Gap: Static Prompts vs. Living Skills
+
+You don’t need another "system prompt." You need a **Tool**. Standard prompts are passive—they wait for input and hope for the best.
+
+* **The "Yes-Man" Problem:** You ask for a critique; the AI just compliments you.
+* **The Context Black Hole:** One complex request later, the AI forgets constraints.
+* **Zero Interactivity:** The AI guesses what you mean instead of asking.
+
+---
+
+## 🏭 The Factory: We Build "Artifacts," Not Just Text.
+
+**Skill-Spec** is your dedicated **Claude Skill Manufacturing Plant**. We treat Prompt Engineering as **Software Engineering**. You give us the raw intent; we manufacture a deployed **Interactive Skill** ready for your Claude Projects.
+
+### 🎮 Why "Interactive" Matters?
+A Skill-Spec generated skill isn't a passive responder; it is an **Active Partner**.
+
+1.  **The Interviewer Mode:** If input is vague, the Skill halts execution and interviews *you*.
+2.  **The Guardrail Enforcer:** It actively rejects inputs that violate the schema *before* processing.
+3.  **The Step-by-Step Navigator:** It guides users through complex workflows.
+
+---
+
+## 🔥 Extreme Examples: From Vague to Industrial
+
+See the difference between a "Chat" and a "Skill-Spec Artifact":
+
+### Case 1: The Code Reviewer
+| The "Vibes" Approach | The Skill-Spec Artifact |
+| :--- | :--- |
+| **User:** "Review this code." | **Trigger:** `run_architecture_audit` |
+| **AI:** "Looks good! Maybe add comments." | **Protocol:**<br>1. **Scan:** Identify Dependency Inversion violations.<br>2. **Reject:** If no unit tests, **STOP** and request them.<br>3. **Output:** Generate Markdown table classifying risks.<br>4. **Interactive:** "Found security flaw. Want me to write a patch?" |
+
+### Case 2: The PR/Marketing Writer
+| The "Vibes" Approach | The Skill-Spec Artifact |
+| :--- | :--- |
+| **User:** "Write a press release." | **Trigger:** `generate_press_kit` |
+| **AI:** *Writes generic fluff with emojis.* | **Protocol:**<br>1. **Interview:** "Who is the target audience? What is the USP?"<br>2. **Forbidden Patterns:** Ban words like "Revolutionary," "Game-changing."<br>3. **Critique:** Self-grade draft against viral hooks. |
 
 ---
 
