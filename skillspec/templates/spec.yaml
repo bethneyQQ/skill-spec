@@ -1,26 +1,71 @@
-# Skill-Spec Template v1.0
+# Skill-Spec Template v1.1
 # Fill in all sections marked with TODO
 # Run: skillspec validate <name> --strict
+#
+# New in v1.1:
+# - triggers: When to activate this skill (Superpowers-style)
+# - boundaries: Will/will_not declarations (SuperClaude-style)
+# - anti_patterns: Common mistakes and rationalizations
+# - complexity/tools_required/personas in skill metadata
+# - token_budget in _meta
+# - behavioral_flow as alternative to steps
+# - format: full | minimal support
 
-spec_version: "skill-spec/1.0"
+spec_version: "skill-spec/1.1"
 
 # Meta configuration (optional)
 _meta:
   content_language: "en"  # en | zh | auto
   mixed_language_strategy: "union"  # union | segment_detect | primary
+  format: "full"  # full | minimal (minimal requires only: skill, inputs, decision_rules, output_contract, edge_cases)
+  token_budget: 500  # Target word count for generated SKILL.md (frequent: <200, standard: <500)
 
 # ============================================================================
-# CORE SECTIONS (8 required)
+# CORE SECTIONS (8 required for full format, 5 for minimal)
 # ============================================================================
 
-# 1. Skill Metadata
+# 1. Skill Metadata (required)
 skill:
   name: "TODO-verb-object"  # kebab-case, e.g., "extract-api-contract"
   version: "1.0.0"
   purpose: "TODO: Single sentence describing what this skill does"
   owner: "TODO-team-name"
 
-# 2. Inputs (Input Contract)
+  # New in v1.1: Enhanced metadata
+  category: "TODO-category"  # documentation | analysis | generation | transformation | validation | orchestration
+  complexity: "standard"     # low | standard | advanced
+  tools_required:            # Claude Code tools this skill needs
+    - Read
+    - Write
+    # - Grep
+    # - Glob
+    # - Bash
+    # - Task
+    # - WebSearch
+  personas:                  # Roles that benefit from this skill
+    - developer
+    # - technical-writer
+    # - architect
+    # - qa-specialist
+    # - security-engineer
+
+# 2. Triggers (new in v1.1, recommended)
+# When should AI activate this skill? Use "Use when..." style from Superpowers
+triggers:
+  use_when:
+    - "TODO: Primary trigger condition"
+    - "TODO: Secondary trigger condition"
+    # Examples:
+    # - "User requests README generation"
+    # - "Codebase lacks documentation"
+    # - "API changes require doc updates"
+  do_not_use_when:
+    - "TODO: When NOT to use this skill"
+    # Examples:
+    # - "Translating existing documentation"
+    # - "Creating marketing content"
+
+# 3. Inputs (Input Contract, required)
 inputs:
   - name: TODO_input_name
     type: string  # string | number | boolean | object | array
@@ -36,18 +81,37 @@ inputs:
       # min: 0  # for range
       # max: 100  # for range
     description: "TODO: Precise semantic definition"
+    tags: []  # Optional: ["content:code", "content:config", "sensitive:pii"]
 
-# 3. Preconditions
+# 4. Preconditions (required for full format)
 preconditions:
   - "TODO: What must be true before this skill runs"
 
-# 4. Non-goals (What this skill does NOT do)
+# 5. Non-goals (required for full format)
 non_goals:
   - "TODO: Explicitly state what is out of scope"
   - "Does not infer missing data"
   - "Does not call external APIs"
 
-# 5. Decision Rules (Explicit logic)
+# 6. Boundaries (new in v1.1, recommended)
+# Clear declaration of what this skill will and will not do (SuperClaude-style)
+boundaries:
+  will:
+    - "TODO: Explicit capability 1"
+    - "TODO: Explicit capability 2"
+    # Examples:
+    # - "Extract documentation from code comments"
+    # - "Generate Markdown formatted output"
+    # - "Support bilingual (zh/en) output"
+  will_not:
+    - "TODO: Explicit limitation 1"
+    - "TODO: Explicit limitation 2"
+    # Examples:
+    # - "Translate existing documentation between languages"
+    # - "Create marketing or sales content"
+    # - "Infer undocumented behavior"
+
+# 7. Decision Rules (Explicit logic, required)
 decision_rules:
   _config:
     match_strategy: first_match  # first_match | priority | all_match
@@ -69,7 +133,8 @@ decision_rules:
         status: success
         path: default
 
-# 6. Steps (Execution Flow)
+# 8. Steps (Execution Flow, required for full format)
+# Technical step-by-step execution
 steps:
   - id: validate
     action: validate_input
@@ -84,7 +149,33 @@ steps:
     action: format_output
     based_on: [result]
 
-# 7. Output Contract
+# 9. Behavioral Flow (new in v1.1, optional alternative/supplement to steps)
+# Higher-level behavioral phases (SuperClaude-style)
+# Use this for AI guidance on HOW to approach the task
+behavioral_flow:
+  - phase: analyze
+    description: "TODO: What happens in analysis phase"
+    key_actions:
+      - "TODO: Key action 1"
+      - "TODO: Key action 2"
+    # Example:
+    # description: "Parse source content, identify structure"
+    # key_actions:
+    #   - "Detect programming language"
+    #   - "Extract comments and docstrings"
+    #   - "Identify API signatures"
+
+  - phase: generate
+    description: "TODO: What happens in generation phase"
+    key_actions:
+      - "TODO: Key action 1"
+
+  - phase: validate
+    description: "TODO: What happens in validation phase"
+    key_actions:
+      - "TODO: Key action 1"
+
+# 10. Output Contract (required)
 output_contract:
   format: json  # json | text | markdown | yaml
   schema:
@@ -98,7 +189,7 @@ output_contract:
       error_code:
         type: string
 
-# 8. Failure Modes
+# 11. Failure Modes (required for full format)
 failure_modes:
   - code: EMPTY_INPUT
     retryable: false
@@ -116,7 +207,7 @@ failure_modes:
 # COVERAGE SECTIONS (1 required)
 # ============================================================================
 
-# 9. Edge Cases
+# 12. Edge Cases (required)
 edge_cases:
   - case: empty_input
     expected:
@@ -129,10 +220,47 @@ edge_cases:
       # Describe expected behavior
 
 # ============================================================================
+# ANTI-PATTERNS SECTION (new in v1.1, recommended)
+# ============================================================================
+
+# 13. Anti-patterns and Rationalizations (Superpowers-style)
+# Common mistakes AI might make and how to counter them
+anti_patterns:
+  # Common mistakes
+  mistakes:
+    - pattern: "TODO: Describe a common mistake"
+      why_bad: "TODO: Why this is problematic"
+      correct: "TODO: What to do instead"
+    # Example:
+    # - pattern: "Copying source code directly into documentation"
+    #   why_bad: "Users need explanations, not code duplicates"
+    #   correct: "Extract key information and describe in natural language"
+
+  # Rationalizations AI might use to skip rules (Superpowers-style)
+  rationalizations:
+    - excuse: "TODO: Common excuse for skipping this skill"
+      reality: "TODO: Why that excuse is wrong"
+    # Examples:
+    # - excuse: "This feature is too simple to document"
+    #   reality: "Simple features are easiest to document; skipping creates debt"
+    # - excuse: "I'll document it after the feature stabilizes"
+    #   reality: "Documentation written alongside code stays accurate"
+    # - excuse: "The code is self-documenting"
+    #   reality: "Code explains HOW, not WHY or WHEN to use"
+
+  # Red flags that indicate rule violations (Superpowers-style)
+  red_flags:
+    - "TODO: Warning sign that skill is being misused"
+    # Examples:
+    # - "Attempting to generate docs without source code"
+    # - "Skipping the analysis phase"
+    # - "Publishing generated docs without validation"
+
+# ============================================================================
 # CONTEXT SECTIONS (optional)
 # ============================================================================
 
-# 10. Context (Collaboration info)
+# 14. Context (Collaboration info)
 context:
   works_with:
     - skill: TODO-related-skill
@@ -143,14 +271,18 @@ context:
 
   scenarios:
     - name: "TODO-scenario-name"
+      trigger: "TODO: What triggers this scenario"  # new in v1.1
       description: "TODO: Describe typical usage scenario"
 
 # ============================================================================
-# EXAMPLES (optional, recommended for Anthropic format)
+# EXAMPLES (optional, recommended)
 # ============================================================================
 
+# 15. Examples
 examples:
   - name: "Basic usage"
+    scenario: "TODO: Describe the context/scenario"  # new in v1.1
+    trigger: "TODO: How user triggers this"          # new in v1.1
     input:
       TODO_input_name: "example value"
     output:

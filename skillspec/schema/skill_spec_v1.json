@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "skill-spec/1.0",
-  "title": "Skill-Spec Schema v1.0",
-  "description": "JSON Schema for Skill-Spec specification files. Section Taxonomy: 8 Core (required) + 1 Coverage (required) + 1 Context (optional)",
+  "$id": "skill-spec/1.1",
+  "title": "Skill-Spec Schema v1.1",
+  "description": "JSON Schema for Skill-Spec specification files. Section Taxonomy: 8 Core (required) + 1 Coverage (required) + Optional sections (triggers, boundaries, anti_patterns, behavioral_flow, context, examples)",
   "type": "object",
   "required": [
     "spec_version",
@@ -20,7 +20,7 @@
   "properties": {
     "spec_version": {
       "type": "string",
-      "const": "skill-spec/1.0",
+      "enum": ["skill-spec/1.0", "skill-spec/1.1"],
       "description": "Schema version identifier"
     },
     "_meta": {
@@ -28,6 +28,9 @@
     },
     "skill": {
       "$ref": "#/definitions/SkillMetadata"
+    },
+    "triggers": {
+      "$ref": "#/definitions/Triggers"
     },
     "inputs": {
       "type": "array",
@@ -55,6 +58,9 @@
         "minLength": 1
       }
     },
+    "boundaries": {
+      "$ref": "#/definitions/Boundaries"
+    },
     "decision_rules": {
       "$ref": "#/definitions/DecisionRules"
     },
@@ -65,6 +71,9 @@
       "items": {
         "$ref": "#/definitions/ExecutionStep"
       }
+    },
+    "behavioral_flow": {
+      "$ref": "#/definitions/BehavioralFlow"
     },
     "output_contract": {
       "$ref": "#/definitions/OutputContract"
@@ -84,6 +93,9 @@
       "items": {
         "$ref": "#/definitions/EdgeCase"
       }
+    },
+    "anti_patterns": {
+      "$ref": "#/definitions/AntiPatterns"
     },
     "context": {
       "$ref": "#/definitions/ContextInfo"
@@ -109,9 +121,22 @@
         },
         "mixed_language_strategy": {
           "type": "string",
-          "enum": ["union", "segment_detect", "primary"],
+          "enum": ["union", "segment_detect", "primary", "zh-primary"],
           "default": "union",
           "description": "Strategy for mixed language validation"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["full", "minimal"],
+          "default": "full",
+          "description": "v1.1: Spec format - full (all sections) or minimal (required sections only)"
+        },
+        "token_budget": {
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 2000,
+          "default": 500,
+          "description": "v1.1: Target word count for generated SKILL.md (frequent skills: <200, standard: <500)"
         }
       },
       "additionalProperties": false
@@ -143,6 +168,166 @@
           "type": "string",
           "minLength": 1,
           "description": "Team or individual responsible"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["documentation", "analysis", "generation", "transformation", "validation", "orchestration", "other"],
+          "description": "v1.1: Skill category for classification"
+        },
+        "complexity": {
+          "type": "string",
+          "enum": ["low", "standard", "advanced"],
+          "default": "standard",
+          "description": "v1.1: Complexity level"
+        },
+        "tools_required": {
+          "type": "array",
+          "description": "v1.1: Tools/capabilities this skill needs (e.g., file_read, file_write, search, web_access, code_execution, api_call)",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["file_read", "file_write", "search"], ["web_access", "api_call"]]
+        },
+        "personas": {
+          "type": "array",
+          "description": "v1.1: Roles that benefit from this skill",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["developer", "architect"], ["technical-writer", "qa-specialist"]]
+        }
+      }
+    },
+    "Triggers": {
+      "type": "object",
+      "description": "v1.1: When to activate this skill (from Superpowers 'Use when...' pattern)",
+      "additionalProperties": false,
+      "properties": {
+        "use_when": {
+          "type": "array",
+          "description": "Conditions that should trigger this skill",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [["User requests README generation", "Codebase lacks documentation", "API changes require doc updates"]]
+        },
+        "do_not_use_when": {
+          "type": "array",
+          "description": "Conditions when this skill should NOT be used",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [["Translating existing documentation", "Creating marketing content"]]
+        }
+      }
+    },
+    "Boundaries": {
+      "type": "object",
+      "description": "v1.1: Clear will/will_not declarations (from SuperClaude)",
+      "additionalProperties": false,
+      "properties": {
+        "will": {
+          "type": "array",
+          "description": "Explicit capabilities this skill provides",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [["Extract documentation from code comments", "Generate Markdown formatted output"]]
+        },
+        "will_not": {
+          "type": "array",
+          "description": "Explicit limitations and exclusions",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [["Translate existing documentation", "Infer undocumented behavior"]]
+        }
+      }
+    },
+    "BehavioralFlow": {
+      "type": "array",
+      "description": "v1.1: High-level behavioral phases (from SuperClaude, alternative/supplement to steps)",
+      "items": {
+        "type": "object",
+        "required": ["phase", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "phase": {
+            "type": "string",
+            "description": "Phase name (e.g., analyze, generate, validate)",
+            "examples": ["analyze", "generate", "validate", "transform"]
+          },
+          "description": {
+            "type": "string",
+            "description": "What happens in this phase"
+          },
+          "key_actions": {
+            "type": "array",
+            "description": "Key actions performed in this phase",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "AntiPatterns": {
+      "type": "object",
+      "description": "v1.1: Common mistakes and rationalizations (from Superpowers)",
+      "additionalProperties": false,
+      "properties": {
+        "mistakes": {
+          "type": "array",
+          "description": "Common mistakes AI might make",
+          "items": {
+            "type": "object",
+            "required": ["pattern", "why_bad", "correct"],
+            "additionalProperties": false,
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "description": "Description of the mistake pattern"
+              },
+              "why_bad": {
+                "type": "string",
+                "description": "Why this pattern is problematic"
+              },
+              "correct": {
+                "type": "string",
+                "description": "What to do instead"
+              }
+            }
+          }
+        },
+        "rationalizations": {
+          "type": "array",
+          "description": "Excuses AI might use to skip rules",
+          "items": {
+            "type": "object",
+            "required": ["excuse", "reality"],
+            "additionalProperties": false,
+            "properties": {
+              "excuse": {
+                "type": "string",
+                "description": "The rationalization/excuse"
+              },
+              "reality": {
+                "type": "string",
+                "description": "Why the excuse is wrong"
+              }
+            }
+          }
+        },
+        "red_flags": {
+          "type": "array",
+          "description": "Warning signs that the skill is being misused",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -212,6 +397,9 @@
         "description": {
           "type": "string",
           "description": "Semantic definition of this input"
+        },
+        "default": {
+          "description": "Default value if not provided"
         },
         "tags": {
           "type": "array",
@@ -437,12 +625,19 @@
           "minLength": 1,
           "description": "Edge case name/description"
         },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of this edge case"
+        },
+        "input": {
+          "description": "Example input that triggers this case"
+        },
+        "input_example": {
+          "description": "Example input that triggers this case (legacy field name)"
+        },
         "expected": {
           "type": "object",
           "description": "Expected behavior for this case"
-        },
-        "input_example": {
-          "description": "Example input that triggers this case"
         },
         "covers_rule": {
           "type": "string",
@@ -484,6 +679,10 @@
             "required": ["name", "description"],
             "properties": {
               "name": {"type": "string"},
+              "trigger": {
+                "type": "string",
+                "description": "v1.1: What triggers this scenario"
+              },
               "description": {"type": "string"}
             }
           }
@@ -499,6 +698,14 @@
         "name": {
           "type": "string",
           "description": "Example name"
+        },
+        "scenario": {
+          "type": "string",
+          "description": "v1.1: Context/scenario description"
+        },
+        "trigger": {
+          "type": "string",
+          "description": "v1.1: How user triggers this"
         },
         "input": {
           "description": "Example input values"

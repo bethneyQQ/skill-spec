@@ -1,18 +1,46 @@
 # Skill-Spec: Document Generator
-# Version: 1.0.0
-# Chinese language skill demonstrating multi-language support
+# Version: 1.1.0
+# Chinese language skill demonstrating multi-language support and v1.1 features
 
-spec_version: "skill-spec/1.0"
+spec_version: "skill-spec/1.1"
 
 _meta:
   content_language: "zh"
   mixed_language_strategy: "zh-primary"
+  format: "full"
+  token_budget: 400  # Target word count for SKILL.md
 
 skill:
   name: "document-generator"
-  version: "1.0.0"
+  version: "1.1.0"
   purpose: "根据代码、API 规范或设计文档自动生成技术文档"
   owner: "documentation-team"
+
+  # v1.1: Enhanced metadata
+  category: "documentation"
+  complexity: "standard"
+  tools_required:
+    - Read
+    - Write
+    - Grep
+    - Glob
+  personas:
+    - developer
+    - technical-writer
+
+# v1.1: Triggers (Superpowers-style)
+triggers:
+  use_when:
+    - "用户请求生成 README 文档"
+    - "代码库缺少技术文档"
+    - "API 接口发生变更需要更新文档"
+    - "准备发布新版本需要变更日志"
+    - "新项目初始化后需要基础文档"
+  do_not_use_when:
+    - "翻译已存在的文档到其他语言"
+    - "创建营销或销售文档"
+    - "编写用户界面文本或 UI copy"
+    - "生成法律或合规相关文档"
 
 inputs:
   - name: source_content
@@ -72,6 +100,21 @@ non_goals:
   - "生成市场营销或销售文档"
   - "创建法律或合规文档"
   - "生成用户界面文本"
+
+# v1.1: Boundaries (SuperClaude-style)
+boundaries:
+  will:
+    - "从代码注释和 docstring 中提取文档"
+    - "生成 Markdown 格式的输出"
+    - "支持中英文双语输出"
+    - "根据源内容结构自动组织文档章节"
+    - "添加示例代码（如果源内容中有）"
+  will_not:
+    - "在不同语言之间翻译已有文档"
+    - "创建营销或促销内容"
+    - "推断未在源代码中记录的行为"
+    - "生成超出技术文档范围的内容"
+    - "修改或重构源代码"
 
 decision_rules:
   _config:
@@ -155,6 +198,32 @@ steps:
     action: "如需要，进行语言翻译或双语处理"
     output: final_doc
     condition: "output_language == 'zh-en'"
+
+# v1.1: Behavioral Flow (SuperClaude-style)
+behavioral_flow:
+  - phase: analyze
+    description: "解析源内容，识别结构和关键信息"
+    key_actions:
+      - "检测编程语言或规范格式"
+      - "提取注释、docstring 和文档块"
+      - "识别 API 签名、函数参数、返回值"
+      - "分析代码结构和模块关系"
+
+  - phase: generate
+    description: "根据分析结果生成文档内容"
+    key_actions:
+      - "创建文档大纲和章节结构"
+      - "为每个章节生成内容"
+      - "添加代码示例和使用说明"
+      - "应用 Markdown 格式化"
+
+  - phase: validate
+    description: "校验生成结果的完整性和准确性"
+    key_actions:
+      - "检查所有必要章节是否存在"
+      - "验证代码示例的语法正确性"
+      - "确认链接和引用的有效性"
+      - "检查格式一致性"
 
 output_contract:
   format: json
@@ -253,6 +322,41 @@ edge_cases:
       status: partial
       warnings: ["无法提取示例代码"]
 
+# v1.1: Anti-patterns and Rationalizations (Superpowers-style)
+anti_patterns:
+  mistakes:
+    - pattern: "直接复制粘贴源代码作为文档内容"
+      why_bad: "用户需要的是解释和说明，不是代码副本"
+      correct: "提取关键信息，用自然语言描述功能和用法"
+
+    - pattern: "跳过解析阶段直接生成文档"
+      why_bad: "没有分析就无法准确理解源内容结构"
+      correct: "始终先完成 analyze 阶段，再进行 generate"
+
+    - pattern: "生成文档后不进行验证"
+      why_bad: "可能包含错误的示例或断开的链接"
+      correct: "完成 validate 阶段，确保文档质量"
+
+  rationalizations:
+    - excuse: "这个功能太简单，不需要文档"
+      reality: "简单功能的文档最容易编写和维护，跳过会导致后续更大的文档债务"
+
+    - excuse: "等功能稳定后再写文档"
+      reality: "文档与代码同步编写才能保持准确性，事后补写往往遗漏细节"
+
+    - excuse: "代码是自文档化的，不需要额外文档"
+      reality: "代码解释 HOW（如何实现），文档解释 WHY（为什么）和 WHEN（何时使用）"
+
+    - excuse: "用户可以直接看源码"
+      reality: "并非所有用户都有能力或时间阅读源码，文档降低了使用门槛"
+
+  red_flags:
+    - "在没有源代码的情况下尝试生成文档"
+    - "跳过 analyze 阶段直接生成"
+    - "生成的文档未经 validate 阶段就发布"
+    - "生成的文档与源代码版本不匹配"
+    - "忽略生成过程中的警告信息"
+
 context:
   works_with:
     - skill: "code-analyzer"
@@ -268,14 +372,21 @@ context:
 
   scenarios:
     - name: "新项目 README 生成"
-      trigger: "项目初始化完成后"
+      trigger: "项目初始化完成后，用户请求生成基础文档"
+      description: "为新创建的项目生成包含概述、安装说明和快速开始的 README"
+
     - name: "API 文档更新"
       trigger: "API 接口发生变更时"
+      description: "根据更新后的 API 规范重新生成参考文档"
+
     - name: "版本发布文档"
       trigger: "准备发布新版本时"
+      description: "生成包含变更日志和升级指南的发布文档"
 
 examples:
   - name: "生成简单 README"
+    scenario: "新项目初始化后需要基础文档"
+    trigger: "用户输入: 为这个 Python 项目生成 README"
     input:
       source_content: |
         def hello(name: str) -> str:
@@ -310,4 +421,4 @@ examples:
           # 输出: 你好，世界！
           ```
         format: "markdown"
-    explanation: "从简单的 Python 函数生成基础 README 文档"
+    explanation: "从简单的 Python 函数生成基础 README 文档，包含功能说明和使用示例"

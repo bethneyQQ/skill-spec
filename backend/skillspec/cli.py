@@ -1872,6 +1872,284 @@ def deploy_status(name: str):
         click.echo("Latest Bundle: none")
 
 
+# =============================================================================
+# Schema Documentation Commands
+# =============================================================================
+
+SCHEMA_SECTIONS = {
+    "skill": {
+        "description": "Skill metadata - identity and classification",
+        "required": True,
+        "fields": {
+            "name": ("string", "Kebab-case name, e.g., 'extract-api-contract'"),
+            "version": ("string", "Semantic version, e.g., '1.0.0'"),
+            "purpose": ("string", "Single sentence describing what this skill does"),
+            "owner": ("string", "Team or individual responsible"),
+            "category": ("string", "NEW v1.1: documentation|analysis|generation|transformation|validation|orchestration"),
+            "complexity": ("string", "NEW v1.1: low|standard|advanced"),
+            "tools_required": ("array", "NEW v1.1: Claude Code tools needed (Read, Write, Grep, etc.)"),
+            "personas": ("array", "NEW v1.1: Roles that benefit (developer, architect, etc.)"),
+        },
+    },
+    "triggers": {
+        "description": "NEW v1.1: When to activate this skill (Superpowers-style)",
+        "required": False,
+        "source": "Superpowers",
+        "fields": {
+            "use_when": ("array", "Conditions that should trigger this skill"),
+            "do_not_use_when": ("array", "Conditions when NOT to use this skill"),
+        },
+    },
+    "inputs": {
+        "description": "Input contract - what the skill accepts",
+        "required": True,
+        "fields": {
+            "name": ("string", "Input parameter name"),
+            "type": ("string", "string|number|boolean|object|array"),
+            "required": ("boolean", "Whether input is mandatory"),
+            "constraints": ("array", "Validation rules (not_empty, max_length, etc.)"),
+            "domain": ("object", "Value domain (enum, range, pattern_set, any)"),
+            "description": ("string", "Precise semantic definition"),
+            "tags": ("array", "Classification tags (content:code, sensitive:pii, etc.)"),
+        },
+    },
+    "preconditions": {
+        "description": "Prerequisites - what must be true before running",
+        "required": True,
+        "fields": {},
+    },
+    "non_goals": {
+        "description": "Explicit boundaries - what this skill does NOT do",
+        "required": True,
+        "fields": {},
+    },
+    "boundaries": {
+        "description": "NEW v1.1: Clear will/will_not declarations (SuperClaude-style)",
+        "required": False,
+        "source": "SuperClaude",
+        "fields": {
+            "will": ("array", "Explicit capabilities this skill provides"),
+            "will_not": ("array", "Explicit limitations and exclusions"),
+        },
+    },
+    "decision_rules": {
+        "description": "Decision logic - explicit conditional behavior",
+        "required": True,
+        "fields": {
+            "_config.match_strategy": ("string", "first_match|priority|all_match"),
+            "_config.conflict_resolution": ("string", "error|warn|first_wins"),
+            "rules[].id": ("string", "Unique rule identifier"),
+            "rules[].priority": ("number", "Rule priority (higher = first)"),
+            "rules[].when": ("string", "Condition expression"),
+            "rules[].then": ("object", "Action when condition matches"),
+            "rules[].is_default": ("boolean", "Default rule if no others match"),
+        },
+    },
+    "steps": {
+        "description": "Execution flow - technical step-by-step",
+        "required": True,
+        "fields": {
+            "id": ("string", "Step identifier"),
+            "action": ("string", "What this step does"),
+            "output": ("string", "Output variable name"),
+            "based_on": ("array", "Input dependencies"),
+            "condition": ("string", "Optional execution condition"),
+        },
+    },
+    "behavioral_flow": {
+        "description": "NEW v1.1: High-level behavioral phases (SuperClaude-style)",
+        "required": False,
+        "source": "SuperClaude",
+        "fields": {
+            "phase": ("string", "Phase name (analyze, generate, validate, etc.)"),
+            "description": ("string", "What happens in this phase"),
+            "key_actions": ("array", "Key actions in this phase"),
+        },
+    },
+    "output_contract": {
+        "description": "Output schema - what the skill produces",
+        "required": True,
+        "fields": {
+            "format": ("string", "json|text|markdown|yaml"),
+            "schema": ("object", "JSON Schema for output validation"),
+        },
+    },
+    "failure_modes": {
+        "description": "Error handling - known failure conditions",
+        "required": True,
+        "fields": {
+            "code": ("string", "Error code identifier"),
+            "retryable": ("boolean", "Whether operation can be retried"),
+            "description": ("string", "When and why this failure occurs"),
+        },
+    },
+    "edge_cases": {
+        "description": "Boundary conditions - edge case coverage",
+        "required": True,
+        "fields": {
+            "case": ("string", "Edge case name"),
+            "description": ("string", "Edge case description"),
+            "input": ("object", "Sample input triggering this case"),
+            "expected": ("object", "Expected output/behavior"),
+        },
+    },
+    "anti_patterns": {
+        "description": "NEW v1.1: Common mistakes and rationalizations (Superpowers-style)",
+        "required": False,
+        "source": "Superpowers",
+        "fields": {
+            "mistakes": ("array", "Common mistakes: pattern, why_bad, correct"),
+            "rationalizations": ("array", "Excuses AI might use: excuse, reality"),
+            "red_flags": ("array", "Warning signs that skill is being misused"),
+        },
+    },
+    "context": {
+        "description": "Collaboration info - related skills and scenarios",
+        "required": False,
+        "fields": {
+            "works_with": ("array", "Related skills: skill, reason"),
+            "prerequisites": ("array", "What user needs to do first"),
+            "scenarios": ("array", "Typical usage scenarios: name, trigger, description"),
+        },
+    },
+    "examples": {
+        "description": "Usage examples - concrete demonstrations",
+        "required": False,
+        "fields": {
+            "name": ("string", "Example name"),
+            "scenario": ("string", "NEW v1.1: Context/scenario description"),
+            "trigger": ("string", "NEW v1.1: How user triggers this"),
+            "input": ("object", "Example input"),
+            "output": ("object", "Expected output"),
+            "explanation": ("string", "What happens in this example"),
+        },
+    },
+    "_meta": {
+        "description": "Meta configuration - spec behavior settings",
+        "required": False,
+        "fields": {
+            "content_language": ("string", "en|zh|auto"),
+            "mixed_language_strategy": ("string", "union|segment_detect|primary"),
+            "format": ("string", "NEW v1.1: full|minimal"),
+            "token_budget": ("number", "NEW v1.1: Target word count for SKILL.md"),
+        },
+    },
+}
+
+
+@cli.command("schema")
+@click.argument("section", required=False)
+@click.option("--new-only", is_flag=True, help="Show only v1.1 new sections")
+@click.option("--format", "output_format", type=click.Choice(["text", "json"]),
+              default="text", help="Output format")
+def schema_docs(section: Optional[str], new_only: bool, output_format: str):
+    """Show schema documentation for spec.yaml fields.
+
+    Display all sections or a specific section's fields and descriptions.
+
+    \b
+    Examples:
+        skillspec schema              # Show all sections
+        skillspec schema skill        # Show 'skill' section fields
+        skillspec schema triggers     # Show 'triggers' section fields
+        skillspec schema --new-only   # Show only v1.1 new sections
+
+    \b
+    v1.1 New Sections:
+        triggers       - When to activate (Superpowers-style)
+        boundaries     - Will/will_not declarations (SuperClaude-style)
+        anti_patterns  - Mistakes and rationalizations (Superpowers-style)
+        behavioral_flow - High-level phases (SuperClaude-style)
+    """
+    if output_format == "json":
+        if section:
+            if section in SCHEMA_SECTIONS:
+                click.echo(json.dumps({section: SCHEMA_SECTIONS[section]}, indent=2))
+            else:
+                click.echo(f'{{"error": "Unknown section: {section}"}}')
+                sys.exit(1)
+        else:
+            data = SCHEMA_SECTIONS
+            if new_only:
+                data = {k: v for k, v in data.items() if v.get("source") or "NEW v1.1" in v.get("description", "")}
+            click.echo(json.dumps(data, indent=2))
+        return
+
+    # Text format
+    if section:
+        if section not in SCHEMA_SECTIONS:
+            click.echo(f"Error: Unknown section '{section}'", err=True)
+            click.echo(f"Available sections: {', '.join(SCHEMA_SECTIONS.keys())}", err=True)
+            sys.exit(1)
+
+        _print_section(section, SCHEMA_SECTIONS[section])
+    else:
+        click.echo("Skill-Spec Schema v1.1")
+        click.echo("=" * 60)
+        click.echo()
+
+        if new_only:
+            click.secho("v1.1 New Sections:", fg="cyan", bold=True)
+            click.echo()
+
+        for name, info in SCHEMA_SECTIONS.items():
+            is_new = info.get("source") or "NEW v1.1" in info.get("description", "")
+            if new_only and not is_new:
+                continue
+            _print_section_brief(name, info)
+
+        if not new_only:
+            click.echo()
+            click.echo("Use 'skillspec schema <section>' for detailed field info")
+            click.echo("Use 'skillspec schema --new-only' to see v1.1 additions")
+
+
+def _print_section(name: str, info: dict) -> None:
+    """Print detailed section info."""
+    is_new = info.get("source") or "NEW v1.1" in info.get("description", "")
+    required_text = "required" if info.get("required") else "optional"
+    source_text = f" (from {info['source']})" if info.get("source") else ""
+
+    click.echo()
+    if is_new:
+        click.secho(f"[{name}]", fg="cyan", bold=True)
+    else:
+        click.secho(f"[{name}]", bold=True)
+
+    click.echo(f"  {info['description']}")
+    click.echo(f"  Status: {required_text}{source_text}")
+    click.echo()
+
+    if info.get("fields"):
+        click.echo("  Fields:")
+        for field_name, (field_type, field_desc) in info["fields"].items():
+            is_field_new = "NEW v1.1" in field_desc
+            if is_field_new:
+                click.secho(f"    {field_name}", fg="cyan", nl=False)
+                click.echo(f" ({field_type})")
+                click.echo(f"      {field_desc}")
+            else:
+                click.echo(f"    {field_name} ({field_type})")
+                click.echo(f"      {field_desc}")
+    else:
+        click.echo("  (array of strings)")
+
+
+def _print_section_brief(name: str, info: dict) -> None:
+    """Print brief section info."""
+    is_new = info.get("source") or "NEW v1.1" in info.get("description", "")
+    required_marker = "*" if info.get("required") else " "
+    source_text = f" [{info['source']}]" if info.get("source") else ""
+
+    if is_new:
+        click.secho(f"  {required_marker} {name}", fg="cyan", nl=False)
+        click.echo(f"{source_text}")
+        click.echo(f"      {info['description']}")
+    else:
+        click.echo(f"  {required_marker} {name}")
+        click.echo(f"      {info['description']}")
+
+
 def main():
     """Entry point for the CLI."""
     cli()
