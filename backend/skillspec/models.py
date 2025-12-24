@@ -145,6 +145,18 @@ class MetaConfig(BaseModel):
         default=MixedLanguageStrategy.UNION,
         description="Strategy for mixed language validation"
     )
+    # v1.1 fields
+    format: Optional[Literal["full", "minimal"]] = Field(
+        default="full",
+        description="v1.1: Spec format - full or minimal"
+    )
+    token_budget: Optional[int] = Field(
+        default=500,
+        ge=50,
+        le=2000,
+        description="v1.1: Target word count for generated SKILL.md"
+    )
+    # v1.2 fields
     agentskills_compat: bool = Field(
         default=False,
         description="v1.2: Enable agentskills.io compatibility mode"
@@ -671,7 +683,108 @@ class Scenario(BaseModel):
     """Usage scenario definition."""
 
     name: str = Field(..., description="Scenario name")
+    trigger: Optional[str] = Field(
+        default=None,
+        description="v1.1: What triggers this scenario"
+    )
     description: str = Field(..., description="Scenario description")
+
+
+# v1.1 Models
+
+class Triggers(BaseModel):
+    """
+    v1.1: When to activate this skill (from Superpowers 'Use when...' pattern).
+    """
+
+    use_when: Optional[List[str]] = Field(
+        default=None,
+        description="Conditions that should trigger this skill"
+    )
+    do_not_use_when: Optional[List[str]] = Field(
+        default=None,
+        description="Conditions when this skill should NOT be used"
+    )
+
+    class Config:
+        extra = "forbid"
+
+
+class Boundaries(BaseModel):
+    """
+    v1.1: Clear will/will_not declarations (from SuperClaude).
+    """
+
+    will: Optional[List[str]] = Field(
+        default=None,
+        description="Explicit capabilities this skill provides"
+    )
+    will_not: Optional[List[str]] = Field(
+        default=None,
+        description="Explicit limitations and exclusions"
+    )
+
+    class Config:
+        extra = "forbid"
+
+
+class BehavioralPhase(BaseModel):
+    """
+    v1.1: A phase in the behavioral flow.
+    """
+
+    phase: str = Field(..., description="Phase name (e.g., analyze, generate, validate)")
+    description: str = Field(..., description="What happens in this phase")
+    key_actions: Optional[List[str]] = Field(
+        default=None,
+        description="Key actions performed in this phase"
+    )
+
+    class Config:
+        extra = "forbid"
+
+
+class Mistake(BaseModel):
+    """v1.1: Common mistake pattern."""
+
+    pattern: str = Field(..., description="Description of the mistake pattern")
+    why_bad: str = Field(..., description="Why this pattern is problematic")
+    correct: str = Field(..., description="What to do instead")
+
+    class Config:
+        extra = "forbid"
+
+
+class Rationalization(BaseModel):
+    """v1.1: Rationalization/excuse pattern."""
+
+    excuse: str = Field(..., description="The rationalization/excuse")
+    reality: str = Field(..., description="Why the excuse is wrong")
+
+    class Config:
+        extra = "forbid"
+
+
+class AntiPatterns(BaseModel):
+    """
+    v1.1: Common mistakes and rationalizations (from Superpowers).
+    """
+
+    mistakes: Optional[List[Mistake]] = Field(
+        default=None,
+        description="Common mistakes AI might make"
+    )
+    rationalizations: Optional[List[Rationalization]] = Field(
+        default=None,
+        description="Excuses AI might use to skip rules"
+    )
+    red_flags: Optional[List[str]] = Field(
+        default=None,
+        description="Warning signs that the skill is being misused"
+    )
+
+    class Config:
+        extra = "forbid"
 
 
 class ContextInfo(BaseModel):
@@ -706,6 +819,14 @@ class Example(BaseModel):
     """
 
     name: str = Field(..., description="Example name")
+    scenario: Optional[str] = Field(
+        default=None,
+        description="v1.1: Context/scenario description"
+    )
+    trigger: Optional[str] = Field(
+        default=None,
+        description="v1.1: How user triggers this"
+    )
     input: Any = Field(..., description="Example input values")
     output: Any = Field(..., description="Expected output")
     explanation: Optional[str] = Field(
@@ -784,6 +905,24 @@ class SkillSpec(BaseModel):
         ...,
         min_length=1,
         description="Edge cases (Section 9 - Coverage)"
+    )
+
+    # v1.1 Optional Sections
+    triggers: Optional[Triggers] = Field(
+        default=None,
+        description="v1.1: When to activate this skill"
+    )
+    boundaries: Optional[Boundaries] = Field(
+        default=None,
+        description="v1.1: Will/will_not declarations"
+    )
+    behavioral_flow: Optional[List[BehavioralPhase]] = Field(
+        default=None,
+        description="v1.1: High-level behavioral phases"
+    )
+    anti_patterns: Optional[AntiPatterns] = Field(
+        default=None,
+        description="v1.1: Common mistakes and rationalizations"
     )
 
     # Context Sections (1 optional)
