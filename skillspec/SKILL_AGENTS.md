@@ -36,25 +36,32 @@ Use the Skill-Spec workflow when:
 - Contains: `skill`, `create`, `new`
 - With purpose description
 
-## Section Taxonomy v1.0
+## Section Taxonomy v1.2
 
 ### Required Sections
 
-**Core Sections (8 required):**
-1. `skill` - Metadata (name, version, purpose, owner)
+**Core Sections (8 required for full format, 5 for minimal):**
+1. `skill` - Metadata (name, version, purpose, owner, category, complexity, tools_required, personas)
 2. `inputs` - Input contract with domain support
-3. `preconditions` - Prerequisites that must be true
-4. `non_goals` - What this skill explicitly does NOT do
+3. `preconditions` - Prerequisites that must be true (full format only)
+4. `non_goals` - What this skill explicitly does NOT do (full format only)
 5. `decision_rules` - Explicit decision criteria with priority
-6. `steps` - Execution flow
+6. `steps` - Execution flow (full format only)
 7. `output_contract` - Verifiable output schema
-8. `failure_modes` - Designed failure scenarios
+8. `failure_modes` - Designed failure scenarios (full format only)
 
 **Coverage Sections (1 required):**
 9. `edge_cases` - Boundary conditions and edge cases
 
-**Context Sections (1 optional):**
-10. `context` - Collaboration info (works_with, prerequisites, scenarios)
+**New in v1.1/v1.2 (Recommended):**
+10. `triggers` - When to use/not use this skill (use_when, do_not_use_when)
+11. `boundaries` - Explicit will/will_not declarations
+12. `behavioral_flow` - Phase-based execution guidance
+13. `anti_patterns` - Common mistakes, rationalizations, red flags
+
+**Context Sections (optional):**
+14. `context` - Collaboration info (works_with, prerequisites, scenarios)
+15. `examples` - Usage examples with scenario and trigger
 
 ## Three-Stage Workflow
 
@@ -89,13 +96,62 @@ After testing:
 
 ```yaml
 skill:
-  name: "kebab-case-verb-object"  # e.g., "extract-api-contract"
+  name: "kebab-case-verb-object"  # e.g., "extract-api-contract", 1-64 chars
   version: "1.0.0"
-  purpose: "Single sentence, third-party can repeat without distortion"
+  purpose: "Single sentence, third-party can repeat without distortion"  # 1-1024 chars
   owner: "team-name"
+
+  # v1.1: Enhanced metadata
+  category: "analysis"           # documentation | analysis | generation | transformation | validation | orchestration
+  complexity: "standard"         # low | standard | advanced
+  tools_required:                # Claude Code tools this skill needs
+    - Read
+    - Write
+    - Grep
+  personas:                      # Roles that benefit from this skill
+    - developer
+    - architect
+
+  # v1.2: agentskills.io compatibility (optional)
+  license: "Apache-2.0"          # SPDX identifier
+  compatibility: "Python 3.9+"   # Environment requirements (max 500 chars)
+  allowed_tools:                 # Pre-approved tools
+    - Read
+    - Write
+  metadata:                      # Custom key-value properties
+    author: "your-name"
+    homepage: "https://example.com"
 ```
 
-### 2. inputs (Input Contract)
+**Skill Fields:**
+- `name`: kebab-case, 1-64 characters (required)
+- `version`: semver format (required)
+- `purpose`: 1-1024 characters (required)
+- `owner`: team name (required)
+- `category`: skill category (recommended)
+- `complexity`: low | standard | advanced (recommended)
+- `tools_required`: list of Claude Code tools (recommended)
+- `personas`: target user roles (optional)
+
+### 2. triggers (v1.1, Recommended)
+
+```yaml
+triggers:
+  use_when:
+    - "User requests API contract extraction"
+    - "Codebase contains OpenAPI specifications"
+    - "New API endpoints are added"
+  do_not_use_when:
+    - "Analyzing non-API code"
+    - "Working with proprietary binary formats"
+    - "User explicitly requests manual review"
+```
+
+**Trigger Fields:**
+- `use_when`: list of conditions when skill should activate (required if triggers used)
+- `do_not_use_when`: list of conditions when skill should NOT activate (recommended)
+
+### 3. inputs (Input Contract)
 
 ```yaml
 inputs:
@@ -126,7 +182,7 @@ inputs:
 - `boolean`: true/false only
 - `any`: no specific domain (default)
 
-### 3. preconditions (Prerequisites)
+### 4. preconditions (Prerequisites)
 
 ```yaml
 preconditions:
@@ -134,7 +190,7 @@ preconditions:
   - "User has required permissions"
 ```
 
-### 4. non_goals (Boundaries)
+### 5. non_goals (Boundaries)
 
 ```yaml
 non_goals:
@@ -143,7 +199,25 @@ non_goals:
   - "Does not modify source files"
 ```
 
-### 5. decision_rules (Explicit Decisions)
+### 6. boundaries (v1.1, Recommended)
+
+```yaml
+boundaries:
+  will:
+    - "Extract API endpoints from source code"
+    - "Parse OpenAPI/Swagger specifications"
+    - "Generate structured contract output"
+  will_not:
+    - "Modify original source files"
+    - "Make network requests to external APIs"
+    - "Infer undocumented behavior"
+```
+
+**Boundary Fields:**
+- `will`: explicit list of what the skill WILL do (required if boundaries used)
+- `will_not`: explicit list of what the skill WILL NOT do (required if boundaries used)
+
+### 7. decision_rules (Explicit Decisions)
 
 ```yaml
 decision_rules:
@@ -151,26 +225,28 @@ decision_rules:
     match_strategy: first_match     # first_match | priority | all_match
     conflict_resolution: error      # error | warn | first_wins
 
-  - id: rule_empty_input            # snake_case, pattern: ^[a-z][a-z0-9_]*$
-    priority: 10                    # int >= 0, higher = checked first
-    when: "len(input) == 0"         # string | boolean | object (JSON Logic)
-    then:                           # action to take
-      status: error                 # success | error | skip | delegate
-      code: EMPTY_INPUT             # optional, error code
-      # action: "do_something"      # optional, action name
-      # path: "error_path"          # optional, execution path
-      # log: warning                # optional, debug | info | warning | error
+  # v1.2: Rules should be under 'rules:' key
+  rules:
+    - id: rule_empty_input          # snake_case, pattern: ^[a-z][a-z0-9_]*$
+      priority: 10                  # int >= 0, higher = checked first
+      when: "len(input) == 0"       # string | boolean | object (JSON Logic)
+      then:                         # action to take
+        status: error               # success | error | skip | delegate
+        code: EMPTY_INPUT           # optional, error code
+        # action: "do_something"    # optional, action name
+        # path: "error_path"        # optional, execution path
+        # log: warning              # optional, debug | info | warning | error
 
-  - id: rule_low_confidence
-    priority: 5
-    when: "input.type == 'A' AND confidence < 0.7"
-    then: {status: error, code: INSUFFICIENT_CONFIDENCE}
+    - id: rule_low_confidence
+      priority: 5
+      when: "input.type == 'A' AND confidence < 0.7"
+      then: {status: error, code: INSUFFICIENT_CONFIDENCE}
 
-  - id: rule_default
-    priority: 0
-    is_default: true                # REQUIRED: one rule must have this
-    when: true                      # default rule uses `when: true`
-    then: {status: success, path: default}
+    - id: rule_default
+      priority: 0
+      is_default: true              # REQUIRED: one rule must have this
+      when: true                    # default rule uses `when: true`
+      then: {status: success, path: default}
 ```
 
 **Rule Fields:**
@@ -183,7 +259,7 @@ decision_rules:
 **Allowed operators:** AND, OR, NOT, ==, !=, <, >, <=, >=
 **Allowed functions:** len(), contains(), matches(), is_empty(), is_null()
 
-### 6. steps (Execution Flow)
+### 8. steps (Execution Flow)
 
 ```yaml
 steps:
@@ -207,7 +283,38 @@ steps:
 - `based_on`: list of outputs from previous steps (optional)
 - `condition`: expression for conditional execution (optional)
 
-### 7. output_contract (Verifiable Output)
+### 9. behavioral_flow (v1.1, Optional)
+
+Higher-level behavioral phases for AI guidance (alternative/supplement to steps).
+
+```yaml
+behavioral_flow:
+  - phase: analyze
+    description: "Parse source content and identify structure"
+    key_actions:
+      - "Detect programming language"
+      - "Extract comments and docstrings"
+      - "Identify API signatures"
+
+  - phase: generate
+    description: "Create structured output from analysis"
+    key_actions:
+      - "Map findings to output schema"
+      - "Apply formatting rules"
+
+  - phase: validate
+    description: "Verify output correctness"
+    key_actions:
+      - "Check output against contract"
+      - "Validate cross-references"
+```
+
+**Behavioral Flow Fields:**
+- `phase`: phase name (required)
+- `description`: what happens in this phase (required)
+- `key_actions`: list of actions in this phase (required)
+
+### 10. output_contract (Verifiable Output)
 
 ```yaml
 output_contract:
@@ -228,7 +335,7 @@ output_contract:
 - `yaml`: YAML formatted output
 - `binary`: Binary data output
 
-### 8. failure_modes (Failure Design)
+### 11. failure_modes (Failure Design)
 
 ```yaml
 failure_modes:
@@ -248,7 +355,7 @@ failure_modes:
 - `description`: human-readable explanation (optional)
 - `recovery_hint`: suggestion for how to fix (optional)
 
-### 9. edge_cases (Coverage - Required)
+### 12. edge_cases (Coverage - Required)
 
 ```yaml
 edge_cases:
@@ -274,7 +381,44 @@ edge_cases:
 - `covers_rule`: which decision_rule id this tests (optional)
 - `covers_failure`: which failure_mode code this tests (optional)
 
-### 10. context (Optional)
+### 13. anti_patterns (v1.1, Recommended)
+
+Common mistakes, rationalizations, and red flags to help AI avoid errors.
+
+```yaml
+anti_patterns:
+  # Common mistakes AI might make
+  mistakes:
+    - pattern: "Copying source code directly into documentation"
+      why_bad: "Users need explanations, not code duplicates"
+      correct: "Extract key information and describe in natural language"
+    - pattern: "Skipping validation when input looks correct"
+      why_bad: "Edge cases often appear valid at first glance"
+      correct: "Always run full validation regardless of apparent correctness"
+
+  # Rationalizations AI might use to skip rules
+  rationalizations:
+    - excuse: "This feature is too simple to document"
+      reality: "Simple features are easiest to document; skipping creates debt"
+    - excuse: "I'll handle this edge case later"
+      reality: "Edge cases discovered during implementation are cheaper to fix now"
+    - excuse: "The code is self-documenting"
+      reality: "Code explains HOW, not WHY or WHEN to use"
+
+  # Red flags that indicate rule violations
+  red_flags:
+    - "Attempting to process without reading input first"
+    - "Skipping the analysis phase"
+    - "Generating output without validation"
+    - "Ignoring error conditions"
+```
+
+**Anti-Pattern Fields:**
+- `mistakes`: list of common mistakes with pattern, why_bad, correct
+- `rationalizations`: list of excuses with excuse and reality
+- `red_flags`: list of warning signs that indicate misuse
+
+### 14. context (Optional)
 
 ```yaml
 context:
@@ -286,19 +430,22 @@ context:
     - "User has required permissions"
   scenarios:                        # optional, typical usage scenarios
     - name: "code-review-workflow"  # scenario name (required in item)
+      trigger: "User initiates code review"  # v1.1: what triggers this scenario
       description: "Use after code-analyzer in review flow"  # (required in item)
 ```
 
 **Context Fields:**
 - `works_with`: list of related skills, each with `skill` and `reason`
 - `prerequisites`: list of things user needs to do first
-- `scenarios`: list of usage scenarios, each with `name` and `description`
+- `scenarios`: list of usage scenarios, each with `name`, `trigger` (v1.1), and `description`
 
-### 11. examples (Optional, recommended for Anthropic format)
+### 15. examples (Optional, recommended)
 
 ```yaml
 examples:
   - name: "Basic usage"             # example name (required)
+    scenario: "New API endpoint added"  # v1.1: context description
+    trigger: "User runs skill on updated file"  # v1.1: how triggered
     input:                          # example input values (required)
       user_input: "test value"
     output:                         # expected output (required)
@@ -309,21 +456,36 @@ examples:
 
 **Example Fields:**
 - `name`: descriptive example name (required)
+- `scenario`: context description (v1.1, optional)
+- `trigger`: how this example is triggered (v1.1, optional)
 - `input`: example input values (required)
 - `output`: expected output (required)
 - `explanation`: explanation of what happens (optional)
 
-### _meta (Optional, for i18n)
+### _meta (Optional, for configuration)
 
 ```yaml
 _meta:
   content_language: en              # en | zh | auto
   mixed_language_strategy: union    # union | segment_detect | primary
+  format: full                      # v1.1: full | minimal
+  token_budget: 500                 # v1.1: target word count for SKILL.md
+
+  # v1.2: agentskills.io compatibility
+  agentskills_compat: false         # enable agentskills.io mode
+  progressive_disclosure:           # token budget breakdown
+    metadata_tokens: 100            # ~100 tokens for metadata
+    instructions_tokens: 2000       # <5000 tokens for instructions
+    max_lines: 500                  # <500 lines for SKILL.md
 ```
 
 **Meta Config:**
-- `content_language`: primary content language
+- `content_language`: primary content language (en | zh | auto)
 - `mixed_language_strategy`: how to handle mixed language validation
+- `format`: full (all sections) or minimal (5 required sections only)
+- `token_budget`: target word count for generated SKILL.md
+- `agentskills_compat`: enable agentskills.io compatibility mode (v1.2)
+- `progressive_disclosure`: token budget breakdown for progressive loading (v1.2)
 
 ## Forbidden Patterns
 
@@ -376,15 +538,24 @@ skillspec deploy <name> --target  # Deploy to target directory
 | skill.name | YAML frontmatter: name |
 | skill.purpose + triggers | YAML frontmatter: description |
 | skill.purpose | ## Purpose |
+| triggers.use_when | ## When to Use (v1.1) |
+| triggers.do_not_use_when | ## When NOT to Use (v1.1) |
 | inputs | ## Inputs |
-| non_goals | ## What This Skill Does NOT Do |
+| boundaries.will | ## What This Skill Does (v1.1) |
+| boundaries.will_not | ## What This Skill Does NOT Do (v1.1) |
+| non_goals | ## Non-Goals |
 | preconditions | ## Prerequisites |
-| decision_rules | ## Decision Criteria / ## When to Use |
+| decision_rules | ## Decision Criteria |
 | steps | ## Workflow |
+| behavioral_flow | ## Behavioral Flow (v1.1) |
 | edge_cases | ## Edge Cases |
 | output_contract | ## Output Format |
 | failure_modes | ## Error Handling |
+| anti_patterns.mistakes | ## Common Mistakes (v1.1) |
+| anti_patterns.rationalizations | ## Rationalizations to Avoid (v1.1) |
+| anti_patterns.red_flags | ## Red Flags (v1.1) |
 | context.works_with | ## Works Well With |
+| examples | ## Examples |
 
 ## Interactive Creation Flow (via /skill-spec:proposal)
 
@@ -482,30 +653,46 @@ The `--strict` flag runs all validation layers:
 
 ## Examples
 
-### Minimal Valid Spec (All Required Fields)
+### Minimal Valid Spec v1.2 (All Required Fields)
 
 ```yaml
-spec_version: "skill-spec/1.0"
+spec_version: "skill-spec/1.2"
 
-# Optional: i18n configuration
-# _meta:
-#   content_language: en
-#   mixed_language_strategy: union
+# Optional: configuration
+_meta:
+  content_language: en
+  mixed_language_strategy: union
+  format: full                      # full | minimal
+  token_budget: 300
+  # agentskills_compat: false       # v1.2: agentskills.io mode
 
 skill:
-  name: "hello-world"               # kebab-case
+  name: "hello-world"               # kebab-case, 1-64 chars
   version: "1.0.0"                  # semver
-  purpose: "Greet the user with their name"  # 10-200 chars
+  purpose: "Greet the user with their name"  # 1-1024 chars
   owner: "demo-team"
+
+  # v1.1: Enhanced metadata
+  category: "generation"
+  complexity: "low"
+  tools_required: [Read, Write]
+  personas: [developer]
+
+# v1.1: Triggers
+triggers:
+  use_when:
+    - "User requests a greeting"
+    - "Welcome flow is initiated"
+  do_not_use_when:
+    - "User wants formal communication"
 
 inputs:
   - name: user_name                 # snake_case
     type: string
     required: true
     constraints: [not_empty]
-    # domain: {type: any}           # optional
-    # description: "User's name"    # optional
-    # tags: []                      # optional
+    domain: {type: any}
+    description: "User's name to greet"
 
 preconditions:
   - "User name is provided"
@@ -514,21 +701,32 @@ non_goals:
   - "Does not validate name format"
   - "Does not store greetings"
 
+# v1.1: Boundaries
+boundaries:
+  will:
+    - "Generate personalized greeting"
+    - "Support any valid string as name"
+  will_not:
+    - "Validate name against external database"
+    - "Store greeting history"
+
 decision_rules:
   _config:
     match_strategy: first_match
     conflict_resolution: error
 
-  - id: rule_empty_name
-    priority: 10
-    when: "is_empty(user_name)"
-    then: {status: error, code: EMPTY_NAME}
+  # v1.2: Rules under 'rules:' key
+  rules:
+    - id: rule_empty_name
+      priority: 10
+      when: "is_empty(user_name)"
+      then: {status: error, code: EMPTY_NAME}
 
-  - id: rule_default
-    priority: 0
-    is_default: true                # REQUIRED: one rule must have this
-    when: true
-    then: {status: success, action: generate_greeting}
+    - id: rule_default
+      priority: 0
+      is_default: true
+      when: true
+      then: {status: success, action: generate_greeting}
 
 steps:
   - id: validate
@@ -538,44 +736,67 @@ steps:
     action: generate_greeting
     output: greeting_message
     based_on: [validated_name]
-    # condition: "validated_name != null"  # optional
+
+# v1.1: Behavioral flow (alternative to steps)
+behavioral_flow:
+  - phase: validate
+    description: "Check input validity"
+    key_actions: ["Verify name is not empty"]
+  - phase: generate
+    description: "Create greeting message"
+    key_actions: ["Format greeting with name"]
 
 output_contract:
-  format: text                      # json | text | markdown | yaml | binary
+  format: text
   schema:
     type: string
     pattern: "^Hello, .+!$"
 
 failure_modes:
-  - code: EMPTY_NAME                # UPPER_SNAKE_CASE
+  - code: EMPTY_NAME
     retryable: false
     description: "User name was empty"
-    # recovery_hint: "Provide a non-empty name"  # optional
+    recovery_hint: "Provide a non-empty name"
 
 edge_cases:
   - case: empty_name
     expected: {status: error, code: EMPTY_NAME}
-    input_example: ""               # optional but recommended
-    covers_failure: EMPTY_NAME      # optional
-    covers_rule: rule_empty_name    # optional
+    input_example: ""
+    covers_failure: EMPTY_NAME
+    covers_rule: rule_empty_name
   - case: long_name
     expected: {status: success, truncated: false}
     input_example: "A very long name that exceeds normal length"
 
-# Optional sections
-# context:
-#   works_with:
-#     - skill: name-validator
-#       reason: "Can validate names before greeting"
-#   prerequisites:
-#     - "User input is available"
-#   scenarios:
-#     - name: "welcome-flow"
-#       description: "Used in user welcome workflow"
+# v1.1: Anti-patterns
+anti_patterns:
+  mistakes:
+    - pattern: "Greeting without validating name"
+      why_bad: "May produce malformed output"
+      correct: "Always validate before greeting"
+  rationalizations:
+    - excuse: "Empty name is obvious edge case"
+      reality: "Still needs explicit handling"
+  red_flags:
+    - "Skipping validation step"
 
-# examples:
-#   - name: "Basic greeting"
-#     input: {user_name: "Alice"}
-#     output: "Hello, Alice!"
-#     explanation: "Simple greeting with valid name"
+# Optional sections
+context:
+  works_with:
+    - skill: name-validator
+      reason: "Can validate names before greeting"
+  prerequisites:
+    - "User input is available"
+  scenarios:
+    - name: "welcome-flow"
+      trigger: "New user session starts"
+      description: "Used in user welcome workflow"
+
+examples:
+  - name: "Basic greeting"
+    scenario: "User provides valid name"
+    trigger: "User enters name in form"
+    input: {user_name: "Alice"}
+    output: "Hello, Alice!"
+    explanation: "Simple greeting with valid name"
 ```
