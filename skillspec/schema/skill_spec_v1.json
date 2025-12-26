@@ -97,6 +97,13 @@
     "anti_patterns": {
       "$ref": "#/definitions/AntiPatterns"
     },
+    "tools": {
+      "type": "array",
+      "description": "v1.2: Custom tool definitions for MCP or external integrations",
+      "items": {
+        "$ref": "#/definitions/ToolDefinition"
+      }
+    },
     "context": {
       "$ref": "#/definitions/ContextInfo"
     },
@@ -611,9 +618,103 @@
         }
       }
     },
+    "ToolParam": {
+      "type": "object",
+      "description": "v1.2: Tool parameter definition",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Parameter name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "boolean", "object", "array"],
+          "default": "string",
+          "description": "Parameter type"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this parameter is required"
+        },
+        "description": {
+          "type": "string",
+          "description": "Parameter description"
+        },
+        "default": {
+          "description": "Default value if not provided"
+        }
+      }
+    },
+    "ToolDefinition": {
+      "type": "object",
+      "description": "v1.2: Tool definition for skill execution. Standard tools (Read, Write, Bash, etc.) are pre-defined. Custom tools can be defined for MCP or external integrations.",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Tool name (e.g., 'Read', 'Write', 'Bash', or custom MCP tool)"
+        },
+        "description": {
+          "type": "string",
+          "description": "What this tool does"
+        },
+        "params": {
+          "type": "array",
+          "description": "Tool parameters",
+          "items": {
+            "$ref": "#/definitions/ToolParam"
+          }
+        },
+        "returns": {
+          "type": "string",
+          "description": "Description of what the tool returns"
+        },
+        "requires_approval": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this tool requires user approval before execution"
+        },
+        "sandbox_safe": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this tool is safe to run in sandbox mode"
+        }
+      }
+    },
+    "ToolBinding": {
+      "type": "object",
+      "description": "v1.2: Binds a tool to an execution step",
+      "required": ["tool"],
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "type": "string",
+          "description": "Tool name to invoke (e.g., 'Read', 'Bash')"
+        },
+        "params": {
+          "type": "object",
+          "description": "Parameter values, can use template syntax like '{{ input.path }}'",
+          "additionalProperties": true
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 600000,
+          "description": "Timeout in milliseconds (1000-600000)"
+        },
+        "on_error": {
+          "type": "string",
+          "description": "Error handling: 'fail', 'skip', 'retry', or failure_mode code"
+        }
+      }
+    },
     "ExecutionStep": {
       "type": "object",
-      "description": "Execution step definition (Section 6)",
+      "description": "Execution step definition (Section 6). Supports both abstract actions and concrete tool bindings.",
       "required": ["id", "action"],
       "additionalProperties": false,
       "properties": {
@@ -625,7 +726,7 @@
         "action": {
           "type": "string",
           "minLength": 1,
-          "description": "Action to perform"
+          "description": "Action to perform (human-readable description)"
         },
         "output": {
           "type": "string",
@@ -639,6 +740,10 @@
         "condition": {
           "type": "string",
           "description": "Optional condition for step execution"
+        },
+        "tool_binding": {
+          "$ref": "#/definitions/ToolBinding",
+          "description": "v1.2: Concrete tool to execute for this step"
         }
       }
     },
