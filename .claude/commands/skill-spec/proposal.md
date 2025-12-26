@@ -34,7 +34,6 @@ description: "Create a new skill spec through interactive requirements gathering
    ```
    What category? (documentation | analysis | generation | transformation | validation | orchestration)
    What complexity level? (low | standard | advanced)
-   What tools/capabilities are required? (file_read, file_write, search, web_access, code_execution, api_call...)
    What roles/personas benefit from this skill? (developer, architect, technical-writer, qa-specialist...)
    ```
 
@@ -42,7 +41,6 @@ description: "Create a new skill spec through interactive requirements gathering
    ```
    What license? (SPDX identifier, e.g., Apache-2.0, MIT, or "LICENSE" for bundled file)
    Any environment requirements? (e.g., "Requires Python 3.9+", max 500 chars)
-   Pre-approved tools for execution? (e.g., Read, Write, Bash - experimental)
    Any custom metadata? (key-value pairs for additional properties)
    ```
 
@@ -88,15 +86,44 @@ description: "Create a new skill spec through interactive requirements gathering
    - "Infer undocumented behavior"
    ```
 
-9. **Collect: decision_rules**
+9. **Collect: tools_required (REQUIRED - Must Ask)**
    ```
-   What decisions does this skill make?
-   - What conditions trigger different behaviors?
-   - What's the default behavior?
-   ```
-   - MUST have one rule with `is_default: true`
+   What tools does this skill need to accomplish its task?
 
-10. **Collect: steps**
+   Questions to ask:
+   1. Does this skill need to read files? (Read)
+   2. Does this skill need to write/create files? (Write)
+   3. Does this skill need to modify existing files? (Edit)
+   4. Does this skill need to search for files? (Glob)
+   5. Does this skill need to search file contents? (Grep)
+   6. Does this skill need to run shell commands? If yes, which specific commands?
+      - Examples: Bash(git:*), Bash(npm:*), Bash(python:*), Bash(docker:*)
+   7. Does this skill need web access? (WebFetch, WebSearch)
+   8. Does this skill need to ask the user questions? (AskUserQuestion)
+   9. Does this skill use any MCP servers or custom tools? If yes, specify:
+      - Tool name
+      - What it does
+      - Required parameters
+   ```
+
+   **Format (agentskills.io compatible):**
+   - Simple tool: `Read`, `Write`, `Grep`
+   - Scoped tool: `Bash(git:*)`, `Bash(npm:install)`
+   - MCP tool: `mcp_server_name:tool_name`
+
+   **This generates:**
+   - `skill.tools_required`: List of tool categories (for documentation)
+   - `skill.allowed_tools`: agentskills.io compatible tool list (for execution)
+
+10. **Collect: decision_rules**
+    ```
+    What decisions does this skill make?
+    - What conditions trigger different behaviors?
+    - What's the default behavior?
+    ```
+    - MUST have one rule with `is_default: true`
+
+11. **Collect: steps**
     ```
     What's the execution flow?
     ```
@@ -116,7 +143,7 @@ description: "Create a new skill spec through interactive requirements gathering
     Available standard tools: Read, Write, Edit, Glob, Grep, Bash, Task, WebFetch, WebSearch
     ```
 
-11. **Collect: tools (v1.2, Optional for custom tools)**
+12. **Collect: tools (v1.2, Optional for custom MCP tools)**
     ```
     Does this skill need custom MCP tools not in the standard set?
 
@@ -130,7 +157,7 @@ description: "Create a new skill spec through interactive requirements gathering
       requires_approval: true
     ```
 
-12. **Collect: behavioral_flow (from SuperClaude, optional)**
+13. **Collect: behavioral_flow (from SuperClaude, optional)**
     ```
     Want to describe high-level behavioral phases? (alternative/supplement to steps)
 
@@ -142,17 +169,17 @@ description: "Create a new skill spec through interactive requirements gathering
     For each phase: description + key_actions
     ```
 
-13. **Collect: output_contract**
+14. **Collect: output_contract**
     ```
     What format should output be? (json | text | markdown | yaml)
     ```
 
-14. **Collect: failure_modes**
+15. **Collect: failure_modes**
     ```
     What error scenarios? (code: UPPER_SNAKE_CASE, retryable: bool)
     ```
 
-15. **Collect: edge_cases**
+16. **Collect: edge_cases**
     ```
     What edge cases? (empty input, malformed data, boundary values...)
     ```
@@ -163,7 +190,7 @@ description: "Create a new skill spec through interactive requirements gathering
     - covers_rule: which decision_rule this tests
     - covers_failure: which failure_mode this tests
 
-16. **Collect: anti_patterns (from Superpowers)**
+17. **Collect: anti_patterns (from Superpowers)**
     ```
     What mistakes might AI make when using this skill?
     - pattern: "Copying source code directly as documentation"
@@ -179,7 +206,7 @@ description: "Create a new skill spec through interactive requirements gathering
     - "Skipping the analysis phase"
     ```
 
-17. **Collect: context (Optional)**
+18. **Collect: context (Optional)**
     ```
     Does this skill work with other skills?
     - works_with: [{skill: "other-skill", reason: "why"}]
@@ -187,13 +214,13 @@ description: "Create a new skill spec through interactive requirements gathering
     - scenarios: typical usage scenarios (name, trigger, description)
     ```
 
-18. **Collect: examples (Optional)**
+19. **Collect: examples (Optional)**
     ```
     Want to add usage examples?
     - name, scenario, trigger, input, output, explanation
     ```
 
-19. **Collect: _meta (Optional)**
+20. **Collect: _meta (Optional)**
     ```
     Any meta configuration?
     - content_language: en | zh | auto
@@ -203,18 +230,18 @@ description: "Create a new skill spec through interactive requirements gathering
     - progressive_disclosure: token budgets for metadata/instructions/lines?
     ```
 
-20. **Generate and Review**
+21. **Generate and Review**
     - Generate complete spec.yaml with all collected info
     - Include `spec_version: "skill-spec/1.2"`
     - Show spec to user in code block
     - Ask: "Does this look correct? Any adjustments?"
     - Make adjustments if requested
 
-21. **Write spec.yaml**
+22. **Write spec.yaml**
     - Create directory: `skillspec/drafts/<name>/`
     - Write spec.yaml to the directory
 
-22. **Lint YAML format** (CRITICAL - prevents format errors)
+23. **Lint YAML format** (CRITICAL - prevents format errors)
     ```bash
     skillspec lint <name>
     ```
@@ -226,12 +253,12 @@ description: "Create a new skill spec through interactive requirements gathering
       - Run lint again until it passes
     - If lint passes, proceed to validation
 
-23. **Run strict validation**
+24. **Run strict validation**
     ```bash
     skillspec validate <name> --strict
     ```
 
-24. **Parse and explain validation results**
+25. **Parse and explain validation results**
     For each error/warning, explain which layer:
     - **Layer 1 (Schema)**: Missing required fields, type mismatches
     - **Layer 2 (Quality)**: Forbidden patterns, vague language
@@ -239,7 +266,7 @@ description: "Create a new skill spec through interactive requirements gathering
     - **Layer 4 (Consistency)**: Cross-reference issues, broken step chains
     - **Layer 5 (Compliance)**: Policy violations (if configured)
 
-25. **Provide fix suggestions**
+26. **Provide fix suggestions**
     For each issue, suggest specific fixes:
     ```
     ERROR: Forbidden pattern "try to" detected
@@ -256,16 +283,16 @@ description: "Create a new skill spec through interactive requirements gathering
     Apply this fix? [y/n]
     ```
 
-26. **Auto-fix common issues**
+27. **Auto-fix common issues**
     - Missing `is_default: true` on fallback rule
     - Missing edge cases for defined failure modes
     - Missing required sections with sensible defaults
 
-27. **Re-validate until passing**
+28. **Re-validate until passing**
     - If fixes applied, re-run validation
     - Repeat until all errors resolved
 
-28. **Show completion summary**
+29. **Show completion summary**
     ```
     Validation Summary:
     - Schema: PASS
