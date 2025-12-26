@@ -1351,8 +1351,8 @@ def test(name: str):
     if not skill_md_content.startswith("---"):
         errors.append("SKILL.md missing frontmatter")
 
-    # Check required sections exist
-    required_sections = ["Purpose", "Inputs", "Output Format"]
+    # Check required sections exist (Anthropic format)
+    required_sections = ["Description", "Inputs", "Instructions", "Limitations", "Output Format"]
     for section in required_sections:
         if f"## {section}" not in skill_md_content:
             errors.append(f"Missing required section: {section}")

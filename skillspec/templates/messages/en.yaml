@@ -74,19 +74,19 @@ cli:
   pruned_events: "Pruned {count} events older than {days} days"
 
 sections:
-  purpose: "Purpose"
+  # Anthropic format section names
+  description: "Description"  # Anthropic required
   inputs: "Inputs"
   prerequisites: "Prerequisites"
-  non_goals: "What This Skill Does NOT Do"
+  instructions: "Instructions"  # Anthropic required
+  limitations: "Limitations"  # Anthropic required
   decision_criteria: "Decision Criteria"
-  workflow: "Workflow"
   edge_cases: "Edge Cases"
   output_format: "Output Format"
-  error_handling: "Error Handling"
-  works_with: "Works Well With"
-  limitations: "Limitations"
-  examples: "Examples"
-  when_to_use: "When to Use"
+  error_codes: "Error Codes"
+  when_to_use: "When to Use"  # Anthropic recommended
+  examples: "Examples"  # Anthropic recommended
+  related_skills: "Related Skills"
 
 report:
   title: "Report: {name}"
