@@ -1119,19 +1119,21 @@ def _generate_skill_md(spec_data: dict) -> str:
 
     # Extract triggers from triggers section or decision rules for description
     triggers = []
+    # Handle all decision_rules formats (needed for Decision Criteria section later)
+    if isinstance(decision_rules, list):
+        rules = decision_rules
+    elif isinstance(decision_rules, dict) and "rules" in decision_rules:
+        rules = decision_rules["rules"]
+    elif isinstance(decision_rules, dict):
+        rules = [v for k, v in decision_rules.items() if k != "_config"]
+    else:
+        rules = []
+
     # First try triggers section (v1.1+)
     if triggers_section.get("use_when"):
         triggers = triggers_section["use_when"][:3]
     else:
-        # Fallback: Handle all decision_rules formats
-        if isinstance(decision_rules, list):
-            rules = decision_rules
-        elif isinstance(decision_rules, dict) and "rules" in decision_rules:
-            rules = decision_rules["rules"]
-        elif isinstance(decision_rules, dict):
-            rules = [v for k, v in decision_rules.items() if k != "_config"]
-        else:
-            rules = []
+        # Fallback: Extract from decision rules
         for rule in rules[:3]:  # First 3 rules
             if isinstance(rule, dict) and rule.get("when") and rule.get("when") is not True:
                 triggers.append(str(rule["when"]))
