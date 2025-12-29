@@ -74,19 +74,19 @@ cli:
   pruned_events: "清理了 {count} 个超过 {days} 天的事件"
 
 sections:
-  purpose: "目的"
+  # Anthropic format section names
+  description: "描述"  # Anthropic required
   inputs: "输入"
   prerequisites: "前提条件"
-  non_goals: "技能不做的事情"
+  instructions: "操作指南"  # Anthropic required
+  limitations: "限制"  # Anthropic required
   decision_criteria: "决策标准"
-  workflow: "工作流程"
   edge_cases: "边界案例"
   output_format: "输出格式"
-  error_handling: "错误处理"
-  works_with: "配合使用"
-  limitations: "限制"
-  examples: "示例"
-  when_to_use: "使用场景"
+  error_codes: "错误代码"
+  when_to_use: "使用场景"  # Anthropic recommended
+  examples: "示例"  # Anthropic recommended
+  related_skills: "相关技能"
 
 report:
   title: "报告: {name}"

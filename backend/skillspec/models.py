@@ -32,6 +32,7 @@ class MixedLanguageStrategy(str, Enum):
     UNION = "union"
     SEGMENT_DETECT = "segment_detect"
     PRIMARY = "primary"
+    ZH_PRIMARY = "zh-primary"
 
 
 class InputType(str, Enum):
@@ -366,6 +367,10 @@ class InputSpec(BaseModel):
         default=None,
         description="Semantic definition of this input"
     )
+    default: Optional[Any] = Field(
+        default=None,
+        description="Default value if not provided"
+    )
     tags: Optional[List[str]] = Field(
         default=None,
         description="Data classification tags"
@@ -536,11 +541,121 @@ class DecisionRules(BaseModel):
         return values
 
 
+class ToolParamType(str, Enum):
+    """Supported tool parameter types."""
+    STRING = "string"
+    NUMBER = "number"
+    BOOLEAN = "boolean"
+    OBJECT = "object"
+    ARRAY = "array"
+
+
+class ToolParam(BaseModel):
+    """
+    Tool parameter definition.
+
+    Defines a single parameter for a tool invocation.
+    """
+
+    name: str = Field(
+        ...,
+        description="Parameter name"
+    )
+    type: ToolParamType = Field(
+        default=ToolParamType.STRING,
+        description="Parameter type"
+    )
+    required: bool = Field(
+        default=False,
+        description="Whether this parameter is required"
+    )
+    description: Optional[str] = Field(
+        default=None,
+        description="Parameter description"
+    )
+    default: Optional[Any] = Field(
+        default=None,
+        description="Default value if not provided"
+    )
+
+    class Config:
+        extra = "forbid"
+
+
+class ToolDefinition(BaseModel):
+    """
+    Tool definition for skill execution.
+
+    Defines a tool that can be used in execution steps.
+    Standard tools (Read, Write, Bash, etc.) are pre-defined.
+    Custom tools can be defined for MCP or external integrations.
+    """
+
+    name: str = Field(
+        ...,
+        description="Tool name (e.g., 'Read', 'Write', 'Bash')"
+    )
+    description: Optional[str] = Field(
+        default=None,
+        description="What this tool does"
+    )
+    params: Optional[List[ToolParam]] = Field(
+        default=None,
+        description="Tool parameters"
+    )
+    returns: Optional[str] = Field(
+        default=None,
+        description="Description of what the tool returns"
+    )
+    requires_approval: bool = Field(
+        default=False,
+        description="Whether this tool requires user approval before execution"
+    )
+    sandbox_safe: bool = Field(
+        default=True,
+        description="Whether this tool is safe to run in sandbox mode"
+    )
+
+    class Config:
+        extra = "forbid"
+
+
+class ToolBinding(BaseModel):
+    """
+    Binds a tool to an execution step.
+
+    Specifies which tool to use and how to pass parameters.
+    """
+
+    tool: str = Field(
+        ...,
+        description="Tool name to invoke (e.g., 'Read', 'Bash')"
+    )
+    params: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Parameter values, can use template syntax like '{{ input.path }}'"
+    )
+    timeout: Optional[int] = Field(
+        default=None,
+        ge=1000,
+        le=600000,
+        description="Timeout in milliseconds (1000-600000)"
+    )
+    on_error: Optional[str] = Field(
+        default=None,
+        description="Error handling strategy: 'fail', 'skip', 'retry', or failure_mode code"
+    )
+
+    class Config:
+        extra = "forbid"
+
+
 class ExecutionStep(BaseModel):
     """
     Execution step definition (Section 6).
 
     Defines a single step in the execution flow.
+    Supports both abstract actions and concrete tool bindings.
     """
 
     id: str = Field(
@@ -550,7 +665,7 @@ class ExecutionStep(BaseModel):
     action: str = Field(
         ...,
         min_length=1,
-        description="Action to perform"
+        description="Action to perform (human-readable description)"
     )
     output: Optional[str] = Field(
         default=None,
@@ -563,6 +678,11 @@ class ExecutionStep(BaseModel):
     condition: Optional[str] = Field(
         default=None,
         description="Optional condition for step execution"
+    )
+    # v1.2: Tool binding support
+    tool_binding: Optional[ToolBinding] = Field(
+        default=None,
+        description="v1.2: Concrete tool to execute for this step"
     )
 
     @field_validator("id")
@@ -651,13 +771,21 @@ class EdgeCase(BaseModel):
         min_length=1,
         description="Edge case name/description"
     )
-    expected: Dict[str, Any] = Field(
-        ...,
-        description="Expected behavior for this case"
+    description: Optional[str] = Field(
+        default=None,
+        description="Detailed description of this edge case"
+    )
+    input: Optional[Any] = Field(
+        default=None,
+        description="Example input that triggers this case"
     )
     input_example: Optional[Any] = Field(
         default=None,
-        description="Example input that triggers this case"
+        description="Example input that triggers this case (legacy field name)"
+    )
+    expected: Dict[str, Any] = Field(
+        ...,
+        description="Expected behavior for this case"
     )
     covers_rule: Optional[str] = Field(
         default=None,
@@ -923,6 +1051,12 @@ class SkillSpec(BaseModel):
     anti_patterns: Optional[AntiPatterns] = Field(
         default=None,
         description="v1.1: Common mistakes and rationalizations"
+    )
+
+    # v1.2: Tool definitions (optional)
+    tools: Optional[List[ToolDefinition]] = Field(
+        default=None,
+        description="v1.2: Custom tool definitions for MCP or external integrations"
     )
 
     # Context Sections (1 optional)

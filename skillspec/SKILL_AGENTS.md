@@ -115,9 +115,10 @@ skill:
   # v1.2: agentskills.io compatibility (optional)
   license: "Apache-2.0"          # SPDX identifier
   compatibility: "Python 3.9+"   # Environment requirements (max 500 chars)
-  allowed_tools:                 # Pre-approved tools
-    - Read
-    - Write
+  allowed_tools:                 # Pre-approved tools (experimental)
+    - Read                       # Basic tool name
+    - "Bash(git:*)"              # Tool with permission scope (agentskills.io syntax)
+    - "Bash(npm:*)"
   metadata:                      # Custom key-value properties
     author: "your-name"
     homepage: "https://example.com"
@@ -130,8 +131,12 @@ skill:
 - `owner`: team name (required)
 - `category`: skill category (recommended)
 - `complexity`: low | standard | advanced (recommended)
-- `tools_required`: list of Claude Code tools (recommended)
+- `tools_required`: list of Claude Code tools this skill needs (recommended)
 - `personas`: target user roles (optional)
+- `allowed_tools`: v1.2, pre-approved tools for execution (experimental, agentskills.io compatible)
+  - Simple: `Read`, `Write`
+  - With scope: `Bash(git:*)`, `Bash(npm:install)`
+  - Renders to SKILL.md frontmatter as: `allowed-tools: Read Bash(git:*)`
 
 ### 2. triggers (v1.1, Recommended)
 
@@ -282,6 +287,55 @@ steps:
 - `output`: variable name for step result (optional)
 - `based_on`: list of outputs from previous steps (optional)
 - `condition`: expression for conditional execution (optional)
+- `tool_binding`: v1.2, concrete tool to execute (optional, see below)
+
+#### Tool Binding (v1.2)
+
+Steps can optionally bind to concrete tools for execution:
+
+```yaml
+steps:
+  - id: read_source
+    action: "Read the source file"
+    output: file_content
+    tool_binding:                   # v1.2: Concrete tool binding
+      tool: Read                    # Tool name (Read, Write, Bash, Grep, etc.)
+      params:                       # Tool parameters
+        file_path: "{{ input.source_path }}"
+      timeout: 30000                # Optional: timeout in ms
+      on_error: INVALID_SOURCE      # Optional: failure_mode code on error
+
+  - id: search_patterns
+    action: "Search for API patterns in code"
+    output: matches
+    tool_binding:
+      tool: Grep
+      params:
+        pattern: "def\\s+\\w+\\("
+        path: "{{ input.source_path }}"
+        output_mode: content
+
+  - id: run_linter
+    action: "Run linter on source"
+    output: lint_result
+    tool_binding:
+      tool: Bash
+      params:
+        command: "pylint {{ input.source_path }}"
+        description: "Run pylint on source file"
+      timeout: 60000
+      on_error: skip               # skip, fail, retry, or failure_mode code
+```
+
+**Tool Binding Fields:**
+- `tool`: Tool name to invoke (required)
+- `params`: Parameter values, supports template syntax `{{ variable }}` (optional)
+- `timeout`: Timeout in milliseconds, 1000-600000 (optional)
+- `on_error`: Error handling strategy (optional)
+  - `fail`: Stop execution (default)
+  - `skip`: Continue to next step
+  - `retry`: Retry the tool call
+  - `<FAILURE_CODE>`: Trigger specific failure_mode
 
 ### 9. behavioral_flow (v1.1, Optional)
 
@@ -418,7 +472,75 @@ anti_patterns:
 - `rationalizations`: list of excuses with excuse and reality
 - `red_flags`: list of warning signs that indicate misuse
 
-### 14. context (Optional)
+### 14. tools (v1.2, Optional)
+
+Custom tool definitions for MCP or external integrations. Standard Claude Code tools (Read, Write, Bash, Grep, etc.) are pre-defined and don't need to be declared.
+
+```yaml
+tools:
+  # Define custom MCP tools
+  - name: mcp_database_query
+    description: "Execute SQL queries via MCP database server"
+    params:
+      - name: query
+        type: string
+        required: true
+        description: "SQL query to execute"
+      - name: database
+        type: string
+        required: false
+        default: "default"
+    returns: "Query results as JSON array"
+    requires_approval: true
+    sandbox_safe: false
+
+  - name: mcp_slack_post
+    description: "Post message to Slack channel via MCP"
+    params:
+      - name: channel
+        type: string
+        required: true
+      - name: message
+        type: string
+        required: true
+    returns: "Message ID"
+    requires_approval: true
+    sandbox_safe: true
+```
+
+**Tool Definition Fields:**
+- `name`: Tool name (required)
+- `description`: What this tool does (optional)
+- `params`: List of parameters (optional)
+  - `name`: Parameter name (required)
+  - `type`: string, number, boolean, object, array (default: string)
+  - `required`: boolean (default: false)
+  - `description`: Parameter description (optional)
+  - `default`: Default value (optional)
+- `returns`: Description of return value (optional)
+- `requires_approval`: Whether user approval is needed (default: false)
+- `sandbox_safe`: Whether safe in sandbox mode (default: true)
+
+#### Standard Tools Reference
+
+These tools are pre-defined and available without declaration:
+
+| Tool | Category | Description | Requires Approval |
+|------|----------|-------------|-------------------|
+| `Read` | File System | Read file contents | No |
+| `Write` | File System | Write content to file | Yes |
+| `Edit` | File System | Replace text in file | Yes |
+| `Glob` | Search | Find files by pattern | No |
+| `Grep` | Search | Search file contents | No |
+| `Bash` | Execution | Execute shell commands | Yes |
+| `Task` | Execution | Launch sub-agent | No |
+| `WebFetch` | Web | Fetch URL content | No |
+| `WebSearch` | Web | Search the web | No |
+| `AskUserQuestion` | Interaction | Ask user questions | No |
+| `TodoWrite` | Interaction | Manage task list | No |
+| `NotebookEdit` | Notebook | Edit Jupyter cells | Yes |
+
+### 15. context (Optional)
 
 ```yaml
 context:

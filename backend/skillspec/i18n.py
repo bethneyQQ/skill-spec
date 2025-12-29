@@ -285,16 +285,18 @@ ENGLISH_MESSAGES: Dict[str, Any] = {
         "archived": "Archived: {name}",
     },
     "sections": {
-        "purpose": "Purpose",
+        "description": "Description",  # Anthropic format (was "purpose")
         "inputs": "Inputs",
         "prerequisites": "Prerequisites",
-        "non_goals": "What This Skill Does NOT Do",
+        "limitations": "Limitations",  # Anthropic format (was "non_goals")
         "decision_criteria": "Decision Criteria",
-        "workflow": "Workflow",
+        "instructions": "Instructions",  # Anthropic format (was "workflow")
         "edge_cases": "Edge Cases",
         "output_format": "Output Format",
-        "error_handling": "Error Handling",
-        "works_with": "Works Well With",
+        "error_codes": "Error Codes",  # Anthropic format (was "error_handling")
+        "when_to_use": "When to Use",  # Anthropic recommended
+        "examples": "Examples",  # Anthropic recommended
+        "related_skills": "Related Skills",  # Anthropic format (was "works_with")
     },
 }
 
@@ -367,16 +369,18 @@ CHINESE_MESSAGES: Dict[str, Any] = {
         "archived": "已归档: {name}",
     },
     "sections": {
-        "purpose": "目的",
+        "description": "描述",  # Anthropic format (was "purpose")
         "inputs": "输入",
         "prerequisites": "前提条件",
-        "non_goals": "技能不做的事情",
+        "limitations": "限制",  # Anthropic format (was "non_goals")
         "decision_criteria": "决策标准",
-        "workflow": "工作流程",
+        "instructions": "操作指南",  # Anthropic format (was "workflow")
         "edge_cases": "边界案例",
         "output_format": "输出格式",
-        "error_handling": "错误处理",
-        "works_with": "配合使用",
+        "error_codes": "错误代码",  # Anthropic format (was "error_handling")
+        "when_to_use": "使用场景",  # Anthropic recommended
+        "examples": "示例",  # Anthropic recommended
+        "related_skills": "相关技能",  # Anthropic format (was "works_with")
     },
 }
 
